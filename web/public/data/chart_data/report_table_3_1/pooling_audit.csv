@@ -1,0 +1,7 @@
+index_0,feature,reason,pooled_original_levels
+0,COLLISION_LABEL,valid,"Unknown, Backing"
+1,ILLUMINATION_LABEL,valid,"Unknown, Other"
+2,WEATHER_GROUP,unverified historical codebook,
+3,ROAD_SURFACE_GROUP,unverified historical codebook,
+4,TIME_PERIOD,valid,
+5,INTERSECTION_LABEL,valid,"Crossover, Railroad crossing, Roundabout, Traffic circle, Traffic circle (old), L intersection"

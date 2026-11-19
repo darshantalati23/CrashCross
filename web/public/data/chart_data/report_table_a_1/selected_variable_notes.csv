@@ -1,0 +1,13 @@
+index_0,field_or_label,analytical_role,interpretation_note
+0,CRASH_CRN,Identifier,Unique crash reference; never a quantitative predictor.
+1,"CRASH_YEAR, month, weekday",Time/category,Used for counts and derived time controls; totals are not exposure rates.
+2,MAX_SEVERITY_LEVEL,Source outcome,Numeric-coded category; unknown values remain unknown.
+3,SEVERE_OUTCOME,Derived binary outcome,Codes 1/2 map to 1; codes 0/3/4 map to 0; other values excluded.
+4,COLLISION_LABEL,Categorical context,"Useful in retrospective analysis; recorded after a crash, so not a pre-event predictor."
+5,ILLUMINATION_LABEL,Categorical context,2024 coverage is structurally absent; common-era comparisons stop in 2023.
+6,"WEATHER_GROUP, ROAD_SURFACE_GROUP",Provisional categories,Historical code mapping remains unverified; descriptive-only and omitted from formal models.
+7,SPEED_LIMIT_VALID,Numeric roadway context,Validated speed-limit measurement; model imputation is fitted on training data only.
+8,"DEC_LAT, DEC_LONG",Location,State-route decimal coordinates selected pending police-coordinate format verification.
+9,"ROUTE, SEGMENT, OFFSET",Linear reference,Incomplete fields; not enough by themselves for a reviewed unique site allocation.
+10,"PERSON_COUNT, VEHICLE_COUNT",Crash-level counts,Skewed counts with retained high values; each row represents a crash.
+11,"INJURY_COUNT, fatal and major injury counts",Outcome-derived counts,Used for descriptive quality checks only; excluded from severity predictors to avoid leakage.

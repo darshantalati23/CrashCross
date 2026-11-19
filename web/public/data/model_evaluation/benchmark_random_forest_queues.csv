@@ -1,0 +1,4 @@
+index_0,experiment_id,top_percent,flagged,found,precision,recall
+0,benchmark_random_forest,5,1385,84,0.06064981949458484,0.06823720552396426
+1,benchmark_random_forest,10,2770,143,0.05162454873646209,0.11616571892770106
+2,benchmark_random_forest,20,5540,302,0.05451263537906137,0.24532900081234768

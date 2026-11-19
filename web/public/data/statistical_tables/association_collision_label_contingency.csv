@@ -1,0 +1,12 @@
+COLLISION_LABEL,0.0,1.0
+Angle,20243,697
+Fixed object,19297,960
+Head-on,3659,383
+Noncollision,1542,141
+Other,1076,21
+Other (pooled for test),335,7
+Other/unknown,815,15
+Pedestrian,1350,496
+Rear-end,19716,350
+Sideswipe opposite direction,1859,61
+Sideswipe same direction,4351,102

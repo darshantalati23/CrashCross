@@ -1,0 +1,4 @@
+index_0,experiment_id,top_percent,flagged,found,precision,recall
+0,histgradientboosting_plus_collision,5,1385,310,0.22382671480144403,0.2518277822908205
+1,histgradientboosting_plus_collision,10,2770,416,0.15018050541516245,0.3379366368805849
+2,histgradientboosting_plus_collision,20,5540,571,0.10306859205776173,0.46385052802599513

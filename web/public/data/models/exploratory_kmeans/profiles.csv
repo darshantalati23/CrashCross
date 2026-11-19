@@ -1,0 +1,5 @@
+CRASH_ARCHETYPE,crash_records,known_severity_records,serious_fatal_records,serious_fatal_share,serious_fatal_percent,top_COLLISION_LABEL,top_ILLUMINATION_LABEL,top_TIME_PERIOD
+0,19776,16253,829.0,0.051005968128960806,5.100596812896081,Fixed object (94.4%),Daylight (46.6%),Night (36.6%)
+1,17472,14881,470.0,0.03158389893152342,3.158389893152342,Rear-end (47.0%),Daylight (62.6%),Morning (30.8%)
+2,38811,32075,1180.0,0.036788776305533906,3.678877630553391,Angle (45.0%),Daylight (97.5%),Afternoon (49.0%)
+3,17603,14267,754.0,0.05284923249456788,5.284923249456789,Angle (36.3%),Dark: streetlights (86.4%),Night (54.8%)

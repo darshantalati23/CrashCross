@@ -1,0 +1,4 @@
+index_0,analysis,status,required,report_analysis,report_status
+0,site-year frequency,intentionally_skipped,"Reviewed unique site assignment, site inventory including zero-count years, positive AADT and suitable segment length/exposure",Site-year crash-frequency model,Skipped: complete approved site-year panel and unique crosswalk absent.
+1,Empirical Bayes,intentionally_skipped,"Eligible site-year panel plus compatible, approved and calibrated safety-performance function (SPF)",Empirical Bayes screening,Skipped: exposure gate and reviewed SPF absent.
+2,countermeasure,intentionally_skipped,"Facility- and crash-type-compatible reviewed CMF, source and uncertainty interval, plus matched baseline",Countermeasure scenario,Skipped: curated CMF evidence absent; no generic reduction assumed.

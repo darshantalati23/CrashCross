@@ -1,0 +1,5 @@
+index_0,model,ap_2_5_percentile,ap_97_5_percentile,valid_block_replicates
+0,Logistic Regression + collision,0.12155756682440158,0.1605830769638377,300
+1,Random Forest + collision,0.12564863709667812,0.16208491326289823,300
+2,Random Forest without collision,0.04710318773543719,0.058704538370933375,300
+3,HistGradientBoosting + collision,0.13196711180631324,0.18102875247161027,300

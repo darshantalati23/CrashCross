@@ -1,0 +1,49 @@
+CRASH_ARCHETYPE,COLLISION_LABEL,n
+0,Angle,61
+0,Backing,23
+0,Fixed object,18675
+0,Head-on,171
+0,Noncollision,268
+0,Other,63
+0,Other/unknown,35
+0,Pedestrian,88
+0,Rear-end,99
+0,Sideswipe opposite direction,62
+0,Sideswipe same direction,220
+0,Unknown,11
+1,Angle,1225
+1,Backing,23
+1,Fixed object,4732
+1,Head-on,322
+1,Noncollision,492
+1,Other,723
+1,Other/unknown,472
+1,Pedestrian,86
+1,Rear-end,8205
+1,Sideswipe opposite direction,141
+1,Sideswipe same direction,1044
+1,Unknown,7
+2,Angle,17481
+2,Backing,251
+2,Fixed object,257
+2,Head-on,2763
+2,Noncollision,831
+2,Other,162
+2,Other/unknown,173
+2,Pedestrian,1695
+2,Rear-end,11390
+2,Sideswipe opposite direction,1319
+2,Sideswipe same direction,2476
+2,Unknown,13
+3,Angle,6383
+3,Backing,75
+3,Fixed object,650
+3,Head-on,1797
+3,Noncollision,437
+3,Other,255
+3,Other/unknown,256
+3,Pedestrian,912
+3,Rear-end,4387
+3,Sideswipe opposite direction,790
+3,Sideswipe same direction,1617
+3,Unknown,44

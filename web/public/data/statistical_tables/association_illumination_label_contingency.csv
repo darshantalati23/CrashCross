@@ -1,0 +1,8 @@
+ILLUMINATION_LABEL,0.0,1.0
+Dark: lighting unknown,375,24
+Dark: no streetlights,4490,255
+Dark: streetlights,20290,1090
+Dawn,1196,40
+Daylight,46452,1757
+Dusk,1296,65
+Other (pooled for test),144,2

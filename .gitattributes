@@ -1,0 +1,4 @@
+# Published research files must stay byte-identical to the export (hashes in site_manifest.json).
+web/public/data/** -text
+*.pdf binary
+*.png binary

@@ -1,0 +1,30 @@
+CRASH_ARCHETYPE,ILLUMINATION_LABEL,n
+0,Dark: lighting unknown,210
+0,Dark: no streetlights,2296
+0,Dark: streetlights,7304
+0,Dawn,386
+0,Daylight,9223
+0,Dusk,314
+0,Other,30
+0,Unknown,13
+1,Dark: lighting unknown,59
+1,Dark: no streetlights,1765
+1,Dark: streetlights,3816
+1,Dawn,437
+1,Daylight,10938
+1,Dusk,374
+1,Other,83
+2,Dark: lighting unknown,23
+2,Dark: no streetlights,125
+2,Dawn,613
+2,Daylight,37854
+2,Dusk,152
+2,Other,43
+2,Unknown,1
+3,Dark: lighting unknown,225
+3,Dark: no streetlights,1376
+3,Dark: streetlights,15206
+3,Dawn,11
+3,Dusk,753
+3,Other,25
+3,Unknown,7

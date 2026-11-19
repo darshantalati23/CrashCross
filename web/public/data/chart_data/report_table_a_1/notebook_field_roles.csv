@@ -1,0 +1,17 @@
+index_0,column,analytical_role,meaning_or_unit,present,coverage_percent
+0,DEC_LAT,State-route decimal latitude,degrees north; SR-derived location,True,95.9
+1,DEC_LONG,State-route decimal longitude,degrees east; SR-derived location,True,95.9
+2,LATITUDE,Police GPS latitude,source text; parse/validate before spatial use,True,95.95
+3,LONGITUDE,Police GPS longitude,source text; parse/validate before spatial use,True,95.94
+4,ROUTE,Road-network key,"route identifier; string, not a measurement",True,58.88
+5,SEGMENT,Road-network key,state-road segment identifier; string,True,55.7
+6,OFFSET,Road-network reference,linear reference offset; check codebook units,True,61.4
+7,STREET_NAME,Unverified local-street reference,name; not globally unique,True,95.05
+8,LANE_COUNT,Roadway measurement,travel lanes; data-quality validation required,True,93.97
+9,SPEED_LIMIT,Roadway measurement,"mph, 5–85 retained for analysis",True,94.64
+10,HOUR_OF_DAY,Time code,"0–23, invalid/sentinel values remain missing",True,95.99
+11,MAX_SEVERITY_LEVEL,Target source,category code; never used as a predictor,True,100.0
+12,INJURY_COUNT,Outcome leakage,crash injury total; do not predict severity with this,True,100.0
+13,FATAL_COUNT,Outcome leakage,fatalities; do not use in severity classifier,True,100.0
+14,MAJ_INJ_COUNT,Outcome leakage,serious injury count; do not use as predictor,True,100.0
+15,TOT_INJ_COUNT,Outcome leakage / consistency audit,highly incomplete injury total,True,36.57

@@ -1,0 +1,4 @@
+index_0,experiment_id,top_percent,flagged,found,precision,recall
+0,random_forest_plus_collision,5,1385,302,0.21805054151624548,0.24532900081234768
+1,random_forest_plus_collision,10,2770,404,0.14584837545126353,0.3281884646628757
+2,random_forest_plus_collision,20,5540,551,0.09945848375451263,0.4476035743298132

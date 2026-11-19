@@ -1,0 +1,3 @@
+true_label,predicted_other,predicted_serious_fatal
+Other known severity,18322,8144
+Serious/fatal,524,707

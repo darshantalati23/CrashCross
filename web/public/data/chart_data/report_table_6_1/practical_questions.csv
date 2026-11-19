@@ -1,0 +1,7 @@
+index_0,question,report_supports,needed_next
+0,Did crash reports fall last year?,Compare annual record totals and the completeness of important fields.,"Traffic volumes, reporting coverage and consistent event definitions before describing a change in risk."
+1,Which crash types have more serious outcomes?,"Compare known-severity shares by type, with denominators and a consistent era.",Exposure by road-user and crash type; a design capable of answering causal or intervention questions.
+2,Is darkness associated with greater severity?,"Describe the common-era difference and adjusted model term, with uncertainty.","Verified illumination coding, traffic and roadway context, and a study that can address confounding."
+3,Where should engineers look first?,Use county-screened concentration as an exploratory locator.,"Unique network matches, stable site units, exposure and a suitable reference population."
+4,Can a score predict severe outcomes?,Report retrospective ranking performance for known crashes in later years.,Pre-event predictors for warning use; independent external validation and calibrated probabilities.
+5,Which treatment will reduce crashes?,The crash records alone do not estimate a treatment effect.,Compatible evidence-based CMFs or a credible causal evaluation with a matched baseline.

@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid #1f5f8b;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .link {
+    @apply text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent;
+  }
+  .btn-primary {
+    @apply inline-flex items-center gap-1.5 rounded-md bg-accent px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-1.5 rounded-md border border-paper-line bg-white px-3 py-1.5 text-sm font-medium text-ink hover:bg-paper disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .input {
+    @apply rounded-md border border-paper-line bg-white px-2.5 py-1.5 text-sm text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+  }
+  .card {
+    @apply rounded-lg border border-paper-line bg-paper-card shadow-sm;
+  }
+  .report-prose {
+    @apply max-w-prose text-[1.03rem] leading-[1.7] text-ink;
+  }
+  .report-prose p {
+    @apply my-3;
+  }
+  .report-prose ol {
+    @apply my-3 list-decimal space-y-2 pl-6;
+  }
+  .report-prose ul {
+    @apply my-3 list-disc space-y-1 pl-6;
+  }
+  .report-prose figure {
+    max-width: none;
+  }
+}
+
+/* Figures inside prose can use the full column width. */
+.report-prose > figure,
+.report-prose > div > figure {
+  max-width: calc(100vw - 2rem);
+}
+@media (min-width: 1024px) {
+  .report-prose {
+    max-width: none;
+  }
+  .report-prose > p,
+  .report-prose > ol,
+  .report-prose > ul,
+  .report-prose > h3,
+  .report-prose > aside {
+    max-width: 72ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Page-turn leaf for the report viewer (disabled entirely under reduced motion in JS). */
+@keyframes leaf-forward {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(-180deg); }
+}
+@keyframes leaf-back {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(180deg); }
+}
+.textLayer {
+  position: absolute;
+  inset: 0;
+}

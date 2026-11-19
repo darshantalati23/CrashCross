@@ -1,0 +1,1 @@
+{"experiment_id":"benchmark_random_forest","accuracy":0.7162869624869119,"balanced_accuracy":0.5324252755846396,"average_precision":0.05161895292819323,"roc_auc":0.5467871566191971,"brier":0.1960843275286559,"n":27697,"events":1231,"prevalence":0.044445246777629344,"constant_training_prevalence":0.03273038060805074,"constant_training_prevalence_brier":0.04260710490587611}

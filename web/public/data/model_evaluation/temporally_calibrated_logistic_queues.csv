@@ -1,0 +1,4 @@
+index_0,experiment_id,top_percent,flagged,found,precision,recall
+0,temporally_calibrated_logistic,5,1385,285,0.20577617328519857,0.23151909017059302
+1,temporally_calibrated_logistic,10,2770,396,0.14296028880866427,0.32168968318440294
+2,temporally_calibrated_logistic,20,5540,557,0.10054151624548736,0.4524776604386678

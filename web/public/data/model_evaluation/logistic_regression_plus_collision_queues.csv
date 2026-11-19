@@ -1,0 +1,4 @@
+index_0,experiment_id,top_percent,flagged,found,precision,recall
+0,logistic_regression_plus_collision,5,1385,295,0.21299638989169675,0.239642567018684
+1,logistic_regression_plus_collision,10,2770,398,0.14368231046931407,0.3233143785540211
+2,logistic_regression_plus_collision,20,5540,560,0.10108303249097472,0.45491470349309504
