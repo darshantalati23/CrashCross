@@ -1,9 +1,10 @@
-# Handoff — current state (2026-11-20, Vercel build fix)
+# Handoff — current state (2026-11-20, Gemini presets)
 
 ## State
 
-Latest fix (milestone 7): removed the unused supplementary index module that still imported the
-deleted `useCatalogue` hook and blocked Vercel's TypeScript build. No active UI or data changed.
+Latest fix (milestone 8): Gemini chat defaults to `gemini-3.1-flash-lite`, with immediate preset
+selection and bounded/cancellable model checks. See `docs/EDAGENT.md` for behavior and regressions.
+The previous Vercel build fix removed the unused supplementary index importing `useCatalogue`.
 Validation and push status are recorded in `docs/PROGRESS.md`.
 
 Current checkout: `C:\Darshan\CrashCross`, on `main` of `darshantalati23/CrashCross`.

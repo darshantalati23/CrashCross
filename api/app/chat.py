@@ -18,7 +18,7 @@ from typing import Any
 from .config import settings
 from .operations import OPERATIONS, OpError, run_operation
 from .providers import (PROVIDERS, ChatProviderError, ChatUnavailable, Provider, get_provider, resolve_key,  # noqa: F401
-                        resolve_model)
+                        resolve_model, GEMINI_DEFAULT_MODEL)
 from .util import clean
 
 
@@ -37,6 +37,8 @@ async def _llm(provider: str | None, byok_key: str | None, model: str | None) ->
     key = resolve_key(p, byok_key)
     if not model and p.name == "anthropic":
         model = settings.llm_model  # long-standing default; no discovery round trip
+    elif not model and p.name == "gemini":
+        model = GEMINI_DEFAULT_MODEL
     elif not model or model.lower() == "auto":
         model = (await resolve_model(p, key, None))["model"]
     return _Llm(p, key, model)

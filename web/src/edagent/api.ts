@@ -10,29 +10,33 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const ctrl = new AbortController();
+  const abort = () => ctrl.abort();
+  init?.signal?.addEventListener('abort', abort, { once: true });
+  if (init?.signal?.aborted) ctrl.abort();
   const timer = setTimeout(() => ctrl.abort(), init?.timeoutMs ?? 90_000);
-  let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, { ...init, signal: ctrl.signal });
+    const res = await fetch(`${API_BASE}${path}`, { ...init, signal: ctrl.signal });
+    if (!res.ok) {
+      let code = 'error';
+      let message = `Request failed (HTTP ${res.status}).`;
+      try {
+        const body = await res.json();
+        code = body?.error?.code ?? code;
+        message = body?.error?.message ?? message;
+      } catch (e) {
+        if (ctrl.signal.aborted) throw e;
+      }
+      throw new ApiError(res.status, code, message);
+    }
+    return await res.json() as T;
   } catch (e) {
+    if (e instanceof ApiError) throw e;
     throw new ApiError(0, (e as Error).name === 'AbortError' ? 'timeout' : 'network',
       (e as Error).name === 'AbortError' ? 'The EDAgent server took too long to respond.' : 'The EDAgent server could not be reached.');
   } finally {
     clearTimeout(timer);
+    init?.signal?.removeEventListener('abort', abort);
   }
-  if (!res.ok) {
-    let code = 'error';
-    let message = `Request failed (HTTP ${res.status}).`;
-    try {
-      const body = await res.json();
-      code = body?.error?.code ?? code;
-      message = body?.error?.message ?? message;
-    } catch {
-      /* non-JSON error body */
-    }
-    throw new ApiError(res.status, code, message);
-  }
-  return res.json() as Promise<T>;
 }
 
 export interface Health {
@@ -151,8 +155,8 @@ export const api = {
     }),
   deleteResult: (sid: string, rid: string) =>
     request<{ deleted: boolean }>(`/api/sessions/${encodeURIComponent(sid)}/results/${rid}`, { method: 'DELETE' }),
-  models: (c: LlmChoice) =>
-    request<ModelCheck>('/api/models', { method: 'POST', headers: llmHeaders(c), timeoutMs: 120_000 }),
+  models: (c: LlmChoice, signal?: AbortSignal) =>
+    request<ModelCheck>('/api/models', { method: 'POST', headers: llmHeaders(c), timeoutMs: 25_000, signal }),
   chat: (sid: string, question: string, llm?: LlmChoice) =>
     request<ChatRecord & { id?: string }>(`/api/sessions/${encodeURIComponent(sid)}/chat`, {
       method: 'POST',

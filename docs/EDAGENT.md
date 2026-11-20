@@ -44,10 +44,18 @@ Providers (`api/app/providers.py`, one small interface: `list_models` + `complet
 | Gemini | REST `GET /v1beta/models`, `POST /v1beta/models/{model}:generateContent`, key in `x-goog-api-key` | models supporting `generateContent` |
 | Grok (xAI) | REST `GET /v1/models`, `POST /v1/chat/completions`, `Authorization: Bearer` | `grok-*` text models |
 
-The Chat tab has a provider selector, a model selector (**Auto** plus the models discovered for that key) and a password field
-(shown when BYOK is enabled). **Check key & model** calls `POST /api/models`, which lists the key's models and validates the
-selection with a minimal request. **Auto** ranks the usable models (stable before preview; Gemini prefers flash, Grok the newest
-version) and tries up to 3, reporting each skipped model and why; if none works it fails with that list. Errors are distinguished as
+The Chat tab has a provider selector, a model selector and a password field (shown when BYOK is enabled).
+Gemini defaults to **Gemini 3.1 Flash Lite** (`gemini-3.1-flash-lite`), with immediately available presets for
+Gemini 3.5 Flash Lite and Gemini 3 Flash Preview. These text models have a published free tier per
+[Google's pricing](https://ai.google.dev/gemini-api/docs/pricing) (checked 2026-11-20); actual quotas/access
+depend on the project, and a billed project may incur charges. Presets do not require discovery or a successful
+check before chatting. Explicit model checks validate only the selected model, without listing models first.
+**Auto** discovers models and ranks them (Gemini 3.1 Flash Lite first, then stable Lite/Flash before Pro; Grok the newest
+version) and tries up to 3, reporting each skipped model and why; if none works it fails with that list.
+The entire check has a 20-second backend deadline and a 25-second browser deadline covering response-body reads.
+Checks can be cancelled; changing provider/key/model invalidates pending responses without locking the selector.
+Regression checks: `cd web; node --test scripts/test-api-timeout.mjs`.
+Errors are distinguished as
 invalid key (`ai_auth`), unavailable model (`ai_model_unavailable`), rate limit, timeout, unavailable and declined. A key is only
 ever sent to the provider the user selected (no guessing from key shape); provider hosts are fixed in code. Gemini/Grok get 3× the
 output-token budget to leave room for hidden reasoning. Gemini/Grok were tested against mocked HTTP only.

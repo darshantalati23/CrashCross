@@ -2,6 +2,15 @@
 
 Newest first. Keep short; details live in HANDOFF / VALIDATION.
 
+## 2026-11-20 — Milestone 8: Gemini presets and bounded model checks
+- Gemini defaults to `gemini-3.1-flash-lite`; presets also include `gemini-3.5-flash-lite` and
+  `gemini-3-flash-preview`, with published free-tier pricing checked against Google's official page.
+- Presets render before discovery. Explicit checks skip model listing; Auto prefers the requested
+  default. Checks stop after 20 s server-side / 25 s client-side, can be cancelled, and ignore stale results.
+- Fixed shared HTTP timeout cleanup: keep the timer active through response-body parsing.
+- Checks: 763 data/UI checks, 43 API tests, 3 frontend regressions and production build all pass.
+- No live provider test performed: the Render-managed key is not available in this workspace.
+
 ## 2026-11-20 — Milestone 7: Vercel TypeScript build fix
 - Removed unused `web/src/research/supplementary.tsx`, left behind after the supplementary index
   was removed from Appendices. It still imported the deleted `useCatalogue` hook, causing TS2305

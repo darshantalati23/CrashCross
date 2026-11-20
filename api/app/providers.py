@@ -13,6 +13,7 @@ Endpoints (official docs):
 
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Any
 
@@ -41,6 +42,8 @@ GEMINI_BASE = "https://generativelanguage.googleapis.com"
 XAI_BASE = "https://api.x.ai"
 AUTO_ATTEMPTS = 3          # how many ranked models "Auto" tries before giving up
 PING_TOKENS = 16           # minimal validation request
+GEMINI_DEFAULT_MODEL = "gemini-3.1-flash-lite"
+MODEL_CHECK_TIMEOUT_SECONDS = 20
 
 
 def _scrub(text: str, key: str) -> str:
@@ -136,8 +139,8 @@ class Gemini(_Http):
     def rank(self, ids):
         skip = re.compile(r"embed|image|tts|audio|live|imagen|veo|aqa|robotics|computer|learnlm|gemma|native|dialog|banana|lyria|deep-research")
         ok = [i for i in ids if i.startswith("gemini") and not skip.search(i)]
-        tier = lambda i: 2 if "lite" in i else 0 if "flash" in i else 1 if "pro" in i else 3
-        return sorted(ok, key=lambda i: (bool(re.search(r"preview|exp", i)), tier(i), -_version(i, "gemini"), i))
+        tier = lambda i: 0 if "lite" in i else 1 if "flash" in i else 2 if "pro" in i else 3
+        return sorted(ok, key=lambda i: (i != GEMINI_DEFAULT_MODEL, bool(re.search(r"preview|exp", i)), tier(i), -_version(i, "gemini"), i))
 
     async def complete(self, key, model, system, user, max_tokens, *, require_text=True):
         body = await self._call(key, "POST", f"/v1beta/models/{model}:generateContent", {
@@ -266,13 +269,20 @@ async def _validate(p: Provider, key: str, model: str) -> None:
 
 
 async def resolve_model(p: Provider, key: str, model: str | None) -> dict:
+    """Bound the entire discovery/validation sequence, including Auto retries."""
+    try:
+        async with asyncio.timeout(MODEL_CHECK_TIMEOUT_SECONDS):
+            return await _resolve_model(p, key, model)
+    except TimeoutError:
+        raise ChatProviderError("timeout", "Model check timed out. Select a preset model and retry, or try chatting directly.") from None
+
+
+async def _resolve_model(p: Provider, key: str, model: str | None) -> dict:
     """Discover the key's models, then validate the chosen one (or pick a working one for Auto) with a minimal request."""
-    available = await p.list_models(key)
     if model and model.lower() != "auto":
-        if model not in available:
-            raise ChatProviderError("model_unavailable", f"{model} is not available for this {p.label} key.")
         await _validate(p, key, model)
-        return {"provider": p.name, "model": model, "auto": False, "models": sorted(available), "failures": []}
+        return {"provider": p.name, "model": model, "auto": False, "models": [model], "failures": []}
+    available = await p.list_models(key)
     failures: list[dict] = []
     for cand in p.rank(available)[:AUTO_ATTEMPTS]:
         try:

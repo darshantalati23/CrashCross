@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import json
 
@@ -18,6 +19,37 @@ from test_api import CSV, upload
 
 client = TestClient(app)
 GKEY, XKEY = "AIzaSECRETgeminikey", "xai-SECRETgrokkey"
+
+
+def test_gemini_preset_check_skips_discovery(monkeypatch):
+    def handler(req):
+        assert req.method == "POST"  # a slow/unavailable model listing cannot block presets
+        assert req.url.path.endswith("/gemini-3.1-flash-lite:generateContent")
+        return httpx.Response(200, json=gemini_ok())
+    calls = mock(monkeypatch, handler)
+    r = client.post("/api/models", headers=hdr("gemini", GKEY, "gemini-3.1-flash-lite"))
+    assert r.status_code == 200, r.text
+    assert r.json()["model"] == "gemini-3.1-flash-lite" and len(calls) == 1
+
+
+def test_gemini_default_and_auto_prefer_requested_model(monkeypatch):
+    async def no_listing(key):
+        pytest.fail("The default chat model must not require discovery")
+    monkeypatch.setattr(providers.PROVIDERS["gemini"], "list_models", no_listing)
+    object.__setattr__(providers.settings, "allow_byok", True)
+    llm = asyncio.run(chat_mod._llm("gemini", GKEY, None))
+    assert llm.model == "gemini-3.1-flash-lite"
+    assert providers.PROVIDERS["gemini"].rank(["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"])[0] == llm.model
+
+
+def test_model_check_has_total_deadline(monkeypatch):
+    async def stalled(key):
+        await asyncio.Event().wait()
+    monkeypatch.setattr(providers.PROVIDERS["gemini"], "list_models", stalled)
+    monkeypatch.setattr(providers, "MODEL_CHECK_TIMEOUT_SECONDS", 0.01)
+    mock(monkeypatch, lambda req: pytest.fail("No network expected"))
+    r = client.post("/api/models", headers=hdr("gemini", GKEY))
+    assert r.status_code == 502 and r.json()["error"]["code"] == "ai_timeout"
 
 
 def gemini_models(*names):
