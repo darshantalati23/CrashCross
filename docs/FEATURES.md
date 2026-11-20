@@ -32,9 +32,9 @@ Legend: ✅ implemented and verified · ⚠️ implemented with a stated limitat
 | Overview and quality checks | ✅ | |
 | Paginated row preview | ✅ | |
 | Configurable charts (bar, histogram, line, scatter, box, correlation) with validation | ✅ | Server-side aggregation over all rows |
-| Dataset-grounded AI chat | ⚠️ | Implemented and tested with a fake model client; **not exercised against the live Anthropic API** (no key available in this environment) |
+| Dataset-grounded AI chat | ⚠️ | Implemented and tested with a fake model client; **not exercised against the live Anthropic, Gemini or Grok APIs** (no keys available in this environment; Gemini/Grok covered by mocked-HTTP tests) |
 | Chat optional when no AI configuration | ✅ | Clear disabled state |
-| Server-managed key; optional BYOK (off by default) | ✅ | BYOK UI shown only when the server enables it |
+| Server-managed key per provider; optional BYOK (off by default) | ✅ | Provider/model selectors (Auto or specific), key field shown only when the server enables BYOK |
 | Exports: HTML report, results JSON, ZIP with CSV tables | ✅ | HTML report loads Plotly from CDN for interactive charts; tables always included |
 | Loading, error, empty, rate-limit, expired-session states | ✅ | |
 | Accounts, saved/durable sessions, database | ⛔ | Not needed by implemented features (see ARCHITECTURE) |

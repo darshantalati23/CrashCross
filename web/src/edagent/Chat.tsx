@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useRef, useState } from 'react';
 import { Send, KeyRound, ShieldCheck, Bot } from 'lucide-react';
-import { api, ApiError, ChatRecord, Health, SessionPayload } from './api';
+import { api, ApiError, ChatRecord, Health, ModelCheck, SessionPayload } from './api';
 import { ResultView } from './ResultView';
 import { Badge, Callout, Disclosure, ErrorNote } from '../components/ui';
 
@@ -13,8 +13,35 @@ export function Chat({ session, health, onResultsChange }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [byok, setByok] = useState(''); // held in memory only; never persisted
+  const providers = health.ai.providers;
+  const usable = providers.filter((p) => p.server_configured || health.ai.byok_allowed);
+  const [provider, setProvider] = useState((usable.find((p) => p.server_configured) ?? usable[0])?.id ?? 'anthropic');
+  const [model, setModel] = useState('auto');
+  const [check, setCheck] = useState<ModelCheck | null>(null); // last successful discovery/validation
+  const [checking, setChecking] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  const aiOn = health.ai.server_configured || (health.ai.byok_allowed && byok.trim().length > 0);
+  const cur = providers.find((p) => p.id === provider);
+  // A key is only sent for the provider the user selected; a server-managed key needs none.
+  const useKey = health.ai.byok_allowed && byok.trim().length > 0;
+  const aiOn = !!cur && (useKey || cur.server_configured) && !checking;
+  const llm = () => ({ provider, key: useKey ? byok.trim() : undefined, model: check && check.provider === provider ? check.model : model });
+
+  const verify = async (m: string) => {
+    setChecking(true);
+    setCheckError(null);
+    setCheck(null);
+    try {
+      const c = await api.models({ provider, key: useKey ? byok.trim() : undefined, model: m });
+      setCheck(c);
+    } catch (e) {
+      setCheckError((e as ApiError).message);
+    } finally {
+      setChecking(false);
+    }
+  };
+  // Changing provider or key invalidates the earlier check and the model choice.
+  const resetCheck = () => { setCheck(null); setCheckError(null); setModel('auto'); };
 
   const ov = session.overview;
   const suggestions = useMemo(() => {
@@ -38,14 +65,14 @@ export function Chat({ session, health, onResultsChange }: {
     setBusy(true);
     setError(null);
     try {
-      const res = await api.chat(session.session_id, question.trim(), health.ai.byok_allowed ? byok.trim() || undefined : undefined);
+      const res = await api.chat(session.session_id, question.trim(), llm());
       if (res.type === 'answer' && res.id) onResultsChange([...session.results, res as ChatRecord & { id: string; created: string }]);
       else setTransient((t) => [...t, { ...res, _t: new Date().toISOString() } as ChatRecord]);
       setQ('');
       setTimeout(() => endRef.current?.scrollIntoView({ block: 'end' }), 50);
     } catch (e) {
       const err = e as ApiError;
-      setError(err.code === 'ai_auth' && byok ? 'The API key you entered was rejected by the provider.' : err.message);
+      setError(err.code === 'ai_auth' && useKey ? 'The API key you entered was rejected by the provider.' : err.message);
     } finally {
       setBusy(false);
     }
@@ -61,7 +88,7 @@ export function Chat({ session, health, onResultsChange }: {
       <Callout kind="note" title="Chat is optional and not configured on this server">
         <p>
           The EDAgent server has no AI provider key, so dataset chat is turned off. Everything else — overview, quality checks, charts and
-          exports — works without it. Operators can enable chat by setting <code>ANTHROPIC_API_KEY</code> on the backend (see the
+          exports — works without it. Operators can enable chat by setting a provider key (<code>ANTHROPIC_API_KEY</code>, <code>GEMINI_API_KEY</code> or <code>XAI_API_KEY</code>) on the backend (see the
           deployment guide).
         </p>
       </Callout>
@@ -78,17 +105,45 @@ export function Chat({ session, health, onResultsChange }: {
         </p>
       </Callout>
 
-      {!health.ai.server_configured && health.ai.byok_allowed && (
-        <div className="card p-4">
-          <label htmlFor="byok" className="flex items-center gap-2 font-semibold"><KeyRound aria-hidden className="h-4 w-4" /> Your Anthropic API key</label>
-          <p className="mt-1 text-sm text-ink-soft">
-            This server has no shared AI key but accepts your own. The key stays in this browser tab’s memory (not stored), is sent over HTTPS
-            with each chat request only, is used for that request and is never saved or logged by the server. Usage is billed to your account.
-          </p>
-          <input id="byok" type="password" autoComplete="off" spellCheck={false} className="input mt-2 w-full max-w-md" placeholder="sk-ant-…"
-            value={byok} onChange={(e) => setByok(e.target.value)} />
+      <div className="card space-y-3 p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="llm-provider" className="block text-sm font-semibold">Provider</label>
+            <select id="llm-provider" className="input mt-1" value={provider} onChange={(e) => { setProvider(e.target.value); resetCheck(); }}>
+              {usable.map((p) => <option key={p.id} value={p.id}>{p.label}{p.server_configured ? ' (server key)' : ''}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="llm-model" className="block text-sm font-semibold">Model</label>
+            <select id="llm-model" className="input mt-1" value={model} disabled={checking}
+              onChange={(e) => { setModel(e.target.value); setCheck(null); setCheckError(null); }}>
+              <option value="auto">Auto</option>
+              {(check?.models ?? []).map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <button type="button" className="btn-secondary" disabled={checking || !cur || !(useKey || cur.server_configured)} onClick={() => verify(model)}>
+            {checking ? 'Checking…' : 'Check key & model'}
+          </button>
         </div>
-      )}
+        {health.ai.byok_allowed && (
+          <div>
+            <label htmlFor="byok" className="flex items-center gap-2 text-sm font-semibold"><KeyRound aria-hidden className="h-4 w-4" /> API key{cur?.server_configured ? ' (optional — this server has one)' : ''}</label>
+            <input id="byok" type="password" autoComplete="off" spellCheck={false} className="input mt-1 w-full max-w-md" placeholder={cur?.key_hint}
+              value={byok} onChange={(e) => { setByok(e.target.value); resetCheck(); }} />
+            <p className="mt-1 text-xs text-ink-soft">
+              Kept in this tab’s memory only, sent over HTTPS to this server with each request and forwarded only to the provider selected above
+              (never guessed from the key). Never saved or logged. Usage is billed to your account.
+            </p>
+          </div>
+        )}
+        {check && (
+          <p className="text-sm" role="status">
+            <Badge tone="ok">Ready</Badge> {check.model}{check.auto ? ' (chosen by Auto)' : ''} — {check.models.length} models available.
+            {check.failures.length > 0 && <span className="text-ink-soft"> Skipped: {check.failures.map((f) => `${f.model} (${f.reason})`).join('; ')}</span>}
+          </p>
+        )}
+        {checkError && <ErrorNote>{checkError}</ErrorNote>}
+      </div>
 
       <div className="space-y-4" aria-live="polite">
         {thread.length === 0 && (
@@ -144,7 +199,7 @@ export function Chat({ session, health, onResultsChange }: {
       </div>
       <form onSubmit={submit} className="flex gap-2">
         <label htmlFor="chat-q" className="sr-only">Question about your dataset</label>
-        <input id="chat-q" className="input flex-1" maxLength={1000} placeholder={aiOn ? 'Ask about this dataset…' : 'Enter your API key above to enable chat'}
+        <input id="chat-q" className="input flex-1" maxLength={1000} placeholder={aiOn ? 'Ask about this dataset…' : 'Choose a provider and add a key above to enable chat'}
           value={q} onChange={(e) => setQ(e.target.value)} disabled={!aiOn || busy} />
         <button type="submit" className="btn-primary" disabled={!aiOn || busy || !q.trim()}>
           <Send aria-hidden className="h-4 w-4" /> {busy ? 'Thinking…' : 'Ask'}

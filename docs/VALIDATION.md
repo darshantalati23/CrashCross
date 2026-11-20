@@ -71,8 +71,9 @@ guard; rate limiter; validation error shape.
 
 ## Not exercised
 
-- Live Anthropic API calls (no `ANTHROPIC_API_KEY` in this environment). The SDK call path
-  (`chat._complete`, refusal handling, fallbacks parameter) is untested against the real service.
+- Live Anthropic, Gemini and Grok API calls (no keys in this environment). Gemini/Grok are tested only against
+  mocked HTTP (`api/tests/test_providers.py`: key headers, model discovery, Auto, invalid key, unavailable model, grounding). The Anthropic SDK call path
+  (`providers.Anthropic.complete`, refusal handling, fallbacks parameter) is untested against the real service.
 - Actual Vercel and Render deployments (instructions only; no accounts used).
 - Screen-reader walkthrough and reduced-motion emulation (code paths reviewed, not tested with AT).
 - Very large uploads near the 200k-row limit on a 512 MB instance.

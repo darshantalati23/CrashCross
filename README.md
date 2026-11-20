@@ -39,7 +39,7 @@ api/.venv/Scripts/python -m uvicorn app.main:app --app-dir api --port 8000
 ```
 
 The research pages work without the API. Copy `.env.example` values into your environment (or
-`api/.env` via your process manager) to configure limits and the optional `ANTHROPIC_API_KEY`.
+`api/.env` via your process manager) to configure limits and the optional provider keys (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`).
 
 ## Rebuilding and verifying research data
 

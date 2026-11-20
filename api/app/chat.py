@@ -6,7 +6,7 @@ explanation of the computed result → grounding check: every number in the expl
 appear in the computed result (or the question); otherwise the explanation is replaced by a
 deterministic summary. The model never executes code and never supplies statistics.
 
-Provider: Anthropic Messages API through the official `anthropic` SDK.
+Providers (Anthropic, Gemini, Grok) sit behind the small interface in providers.py; only `complete` is used here.
 """
 
 from __future__ import annotations
@@ -15,78 +15,44 @@ import json
 import re
 from typing import Any
 
-import anthropic
-
 from .config import settings
 from .operations import OPERATIONS, OpError, run_operation
+from .providers import (PROVIDERS, ChatProviderError, ChatUnavailable, Provider, get_provider, resolve_key,  # noqa: F401
+                        resolve_model)
 from .util import clean
 
 
-class ChatUnavailable(Exception):
-    pass
+class _Llm:
+    """One provider + key + model, used for the planner and explanation calls of a single request."""
+
+    def __init__(self, provider: Provider, key: str, model: str):
+        self.provider, self.key, self.model = provider, key, model
+
+    async def complete(self, system: str, user: str, max_tokens: int) -> str:
+        return await self.provider.complete(self.key, self.model, system, user, max_tokens)
 
 
-class ChatProviderError(Exception):
-    def __init__(self, kind: str, message: str):
-        super().__init__(message)
-        self.kind = kind
-        self.message = message
-
-
-_server_client: anthropic.AsyncAnthropic | None = None
-
-
-def _client(byok_key: str | None) -> anthropic.AsyncAnthropic:
-    global _server_client
-    common = {"base_url": settings.llm_base_url, "timeout": settings.llm_timeout_seconds, "max_retries": 1}
-    if byok_key:
-        if not settings.allow_byok:
-            raise ChatUnavailable("This server does not accept user-supplied API keys.")
-        return anthropic.AsyncAnthropic(api_key=byok_key, **common)
-    if not settings.server_ai_configured:
-        raise ChatUnavailable("AI chat is not configured on this server.")
-    if _server_client is None:
-        _server_client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, **common)
-    return _server_client
+async def _llm(provider: str | None, byok_key: str | None, model: str | None) -> _Llm:
+    p = get_provider(provider)
+    key = resolve_key(p, byok_key)
+    if not model and p.name == "anthropic":
+        model = settings.llm_model  # long-standing default; no discovery round trip
+    elif not model or model.lower() == "auto":
+        model = (await resolve_model(p, key, None))["model"]
+    return _Llm(p, key, model)
 
 
 def ai_status() -> dict:
-    return {"server_configured": settings.server_ai_configured, "byok_allowed": settings.allow_byok,
-            "provider": "anthropic" if settings.server_ai_configured or settings.allow_byok else None,
-            "model": settings.llm_model if settings.server_ai_configured or settings.allow_byok else None}
+    return {"server_configured": settings.server_ai_configured, "server_providers": settings.server_providers,
+            "byok_allowed": settings.allow_byok,
+            "providers": [{"id": p.name, "label": p.label, "key_hint": p.key_hint, "server_configured": bool(settings.server_key(p.name))}
+                          for p in PROVIDERS.values()]}
 
 
-async def _complete(client: anthropic.AsyncAnthropic, system: str, user: str, max_tokens: int) -> str:
-    kwargs: dict[str, Any] = dict(
-        model=settings.llm_model, max_tokens=max_tokens, system=system,
-        messages=[{"role": "user", "content": user}],
-        output_config={"effort": settings.llm_effort},
-    )
-    try:
-        if settings.llm_fallbacks:
-            resp = await client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kwargs)
-        else:
-            resp = await client.messages.create(**kwargs)
-    except anthropic.AuthenticationError:
-        raise ChatProviderError("auth", "The AI provider rejected the API key.") from None
-    except anthropic.PermissionDeniedError:
-        raise ChatProviderError("auth", "The API key is not permitted to use the configured model.") from None
-    except anthropic.RateLimitError:
-        raise ChatProviderError("rate_limit", "The AI provider is rate-limiting requests; try again shortly.") from None
-    except anthropic.BadRequestError as e:
-        raise ChatProviderError("configuration", f"The AI provider rejected the request ({getattr(e, 'message', '')[:160]}).") from None
-    except anthropic.APITimeoutError:
-        raise ChatProviderError("timeout", "The AI provider did not respond in time.") from None
-    except anthropic.APIConnectionError:
-        raise ChatProviderError("unavailable", "Could not reach the AI provider.") from None
-    except anthropic.APIStatusError as e:
-        raise ChatProviderError("unavailable", f"The AI provider returned an error (HTTP {e.status_code}).") from None
-    if resp.stop_reason == "refusal":
-        raise ChatProviderError("refusal", "The AI provider declined to answer this request.")
-    text = "".join(getattr(b, "text", "") for b in resp.content if getattr(b, "type", "") == "text")
-    if not text.strip():
-        raise ChatProviderError("bad_response", "The AI provider returned no text.")
-    return text
+async def check_model(provider: str | None, byok_key: str | None, model: str | None) -> dict:
+    """Discover models for the selected provider/key and validate the chosen model (or choose one for Auto)."""
+    p = get_provider(provider)
+    return await resolve_model(p, resolve_key(p, byok_key), model)
 
 
 def _dataset_context(filename: str, overview: dict) -> str:
@@ -191,12 +157,13 @@ def template_summary(result: dict) -> str:
     return " ".join(parts)
 
 
-async def answer(question: str, filename: str, df, overview: dict, history: list[dict], byok_key: str | None) -> dict:
-    client = _client(byok_key)
+async def answer(question: str, filename: str, df, overview: dict, history: list[dict], byok_key: str | None,
+                 provider: str | None = None, model: str | None = None) -> dict:
+    llm = await _llm(provider, byok_key, model)
     ops = "\n".join(f"- {name}: {desc}" for name, (_, desc) in OPERATIONS.items())
     hist = "\n".join(f"Q: {h['question']}\nPlan: {json.dumps(h.get('plan'))}" for h in history[-4:]) or "(none)"
     user = f"<dataset>\n{_dataset_context(filename, overview)}\n</dataset>\n\n<history>\n{hist}\n</history>\n\nQuestion: {question}"
-    raw = await _complete(client, PLANNER_SYSTEM + ops, user, 1200)
+    raw = await llm.complete(PLANNER_SYSTEM + ops, user, 1200)
     try:
         plan = _parse_json(raw)
     except (json.JSONDecodeError, TypeError):
@@ -221,7 +188,7 @@ async def answer(question: str, filename: str, df, overview: dict, history: list
         compact["table"] = {"columns": result["table"]["columns"], "rows": result["table"]["rows"][:25]}
     explanation, source, ungrounded = None, "template", []
     try:
-        text = await _complete(client, EXPLAIN_SYSTEM, f"Question: {question}\n\n<result>\n{json.dumps(compact, default=str)[:12000]}\n</result>", 600)
+        text = await llm.complete(EXPLAIN_SYSTEM, f"Question: {question}\n\n<result>\n{json.dumps(compact, default=str)[:12000]}\n</result>", 600)
         ok, ungrounded = grounded(text, compact, question)
         if ok:
             explanation, source = text.strip(), "ai"
@@ -230,4 +197,4 @@ async def answer(question: str, filename: str, df, overview: dict, history: list
     if explanation is None:
         explanation = template_summary(result)
     return {"type": "answer", "plan": plan, "result": result, "explanation": explanation, "explanation_source": source,
-            "withheld_numbers": ungrounded[:10]}
+            "withheld_numbers": ungrounded[:10], "provider": llm.provider.name, "model": llm.model}

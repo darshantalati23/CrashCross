@@ -1,6 +1,6 @@
 # Render Blueprint for the EDAgent API (FastAPI). The research website is static (web/) and does
 # not need this service. Free plan: 512 MB RAM, sleeps after 15 min idle — see docs/DEPLOYMENT.md.
-# AI chat is OFF in this blueprint (no ANTHROPIC_API_KEY). Add the key later in the dashboard to enable it.
+# AI chat is OFF in this blueprint (no ANTHROPIC_API_KEY / GEMINI_API_KEY / XAI_API_KEY). Add a key later in the dashboard to enable it.
 services:
   - type: web
     name: crashcross-edagent-api

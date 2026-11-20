@@ -4,7 +4,7 @@ Two independent parts. The website is static and works on its own. The API is ne
 If the API is asleep or missing, the EDAgent tab shows "Connecting… (can take up to a minute if it was asleep)",
 then an "unreachable / may be starting up" message with **Try again**. All research pages are unaffected.
 
-**Initial deployment is AI-free.** The Render blueprint sets no `ANTHROPIC_API_KEY`, and `ALLOW_BYOK=false`.
+**Initial deployment is AI-free.** The Render blueprint sets no provider key (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`), and `ALLOW_BYOK=false`.
 The chat tab therefore says "Chat is optional and not configured on this server". Nothing incurs AI cost.
 
 ## Deployment source: use a personal GitHub repository
@@ -64,7 +64,7 @@ Environment variables:
 | `MAX_SESSIONS` | `8` |
 | `SESSION_MEMORY_BUDGET_MB` | `240` |
 | `SESSION_TTL_MINUTES` | `60` |
-| `ANTHROPIC_API_KEY` | **leave unset** (chat disabled). Add later as a secret to enable chat; this incurs API costs |
+| `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `XAI_API_KEY` | **leave unset** (chat disabled). Add one or more later as secrets to enable chat for that provider; this incurs API costs |
 
 Afterwards open `https://<service>.onrender.com/api/health`.
 

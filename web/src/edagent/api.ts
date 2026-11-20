@@ -37,7 +37,10 @@ async function request<T>(path: string, init?: RequestInit & { timeoutMs?: numbe
 
 export interface Health {
   status: string;
-  ai: { server_configured: boolean; byok_allowed: boolean; provider: string | null; model: string | null };
+  ai: {
+    server_configured: boolean; byok_allowed: boolean; server_providers: string[];
+    providers: { id: string; label: string; key_hint: string; server_configured: boolean }[];
+  };
   limits: { max_upload_mb: number; max_rows: number; max_columns: number; session_ttl_minutes: number; supported_extensions: string[] };
 }
 
@@ -100,7 +103,19 @@ export interface ChatRecord {
   explanation?: string;
   explanation_source?: 'ai' | 'template';
   withheld_numbers?: string[];
+  provider?: string;
+  model?: string;
 }
+
+export interface ModelCheck { provider: string; model: string; auto: boolean; models: string[]; failures: { model: string; reason: string }[] }
+
+export interface LlmChoice { provider: string; key?: string; model?: string }
+
+const llmHeaders = (c?: LlmChoice): Record<string, string> => c ? {
+  'X-LLM-Provider': c.provider,
+  ...(c.key ? { 'X-LLM-Api-Key': c.key } : {}),
+  ...(c.model ? { 'X-LLM-Model': c.model } : {}),
+} : {};
 
 export type SessionResult = ChartResult | (ChatRecord & { id: string; created: string });
 
@@ -136,10 +151,12 @@ export const api = {
     }),
   deleteResult: (sid: string, rid: string) =>
     request<{ deleted: boolean }>(`/api/sessions/${encodeURIComponent(sid)}/results/${rid}`, { method: 'DELETE' }),
-  chat: (sid: string, question: string, byokKey?: string) =>
+  models: (c: LlmChoice) =>
+    request<ModelCheck>('/api/models', { method: 'POST', headers: llmHeaders(c), timeoutMs: 120_000 }),
+  chat: (sid: string, question: string, llm?: LlmChoice) =>
     request<ChatRecord & { id?: string }>(`/api/sessions/${encodeURIComponent(sid)}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(byokKey ? { 'X-LLM-Api-Key': byokKey } : {}) },
+      headers: { 'Content-Type': 'application/json', ...llmHeaders(llm) },
       body: JSON.stringify({ question }),
       timeoutMs: 120_000,
     }),

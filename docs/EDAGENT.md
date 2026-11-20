@@ -36,24 +36,34 @@ OpenAPI docs at `/api/docs`. Errors: `{"error": {"code", "message"}}`.
    (allowing display rounding / ×100 for percentages). Otherwise the explanation is replaced by a
    deterministic summary and the offending numbers are shown as withheld.
 
-Provider: Anthropic Messages API through the official Python SDK (`anthropic==2.11.0`), model
-`LLM_MODEL` (default `claude-opus-5-5`), `output_config.effort` = `LLM_EFFORT` (default `low` —
-planning/short explanations), server-side refusal fallbacks enabled (`fallbacks="default"`, beta
-`server-side-fallback-2026-07-01`; disable with `LLM_FALLBACKS=false`). A `refusal` stop reason is
-reported to the user as "declined". Provider errors map to auth / rate-limit / timeout / unavailable messages.
+Providers (`api/app/providers.py`, one small interface: `list_models` + `complete`; the planner and explanation steps are unchanged):
+
+| Provider | Transport | Models |
+| --- | --- | --- |
+| Anthropic | official `anthropic` SDK (`anthropic==2.11.0`), `output_config.effort` = `LLM_EFFORT`, server-side refusal fallbacks (`LLM_FALLBACKS`) | `models.list`; default `LLM_MODEL` (`claude-opus-5-5`) |
+| Gemini | REST `GET /v1beta/models`, `POST /v1beta/models/{model}:generateContent`, key in `x-goog-api-key` | models supporting `generateContent` |
+| Grok (xAI) | REST `GET /v1/models`, `POST /v1/chat/completions`, `Authorization: Bearer` | `grok-*` text models |
+
+The Chat tab has a provider selector, a model selector (**Auto** plus the models discovered for that key) and a password field
+(shown when BYOK is enabled). **Check key & model** calls `POST /api/models`, which lists the key's models and validates the
+selection with a minimal request. **Auto** ranks the usable models (stable before preview; Gemini prefers flash, Grok the newest
+version) and tries up to 3, reporting each skipped model and why; if none works it fails with that list. Errors are distinguished as
+invalid key (`ai_auth`), unavailable model (`ai_model_unavailable`), rate limit, timeout, unavailable and declined. A key is only
+ever sent to the provider the user selected (no guessing from key shape); provider hosts are fixed in code. Gemini/Grok get 3× the
+output-token budget to leave room for hidden reasoning. Gemini/Grok were tested against mocked HTTP only.
+Provider errors map to auth / rate-limit / timeout / unavailable messages; a refusal is reported as "declined".
 
 What is sent to the provider: column metadata, a few example values per column, computed result tables.
 Raw rows are not sent.
 
 ## API-key approach
 
-- **Server-managed (default):** `ANTHROPIC_API_KEY` set only in the backend environment. It is never
-  returned by any endpoint (`/api/health` exposes only `server_configured: true/false`) or bundled in the site.
-- **Bring-your-own-key (optional, `ALLOW_BYOK=true`, off by default):** the user types a key in the
+- **Server-managed (default):** `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` and/or `XAI_API_KEY` set only in the backend environment. It is never
+  returned by any endpoint (`/api/health` exposes only which providers are configured, as booleans/ids) or bundled in the site.
+- **Bring-your-own-key (optional, `ALLOW_BYOK=true`, off by default):** the user selects a provider and types its key in the
   Chat tab; it is kept in React state only (not localStorage/sessionStorage), sent over HTTPS in the
-  `X-LLM-Api-Key` header with each chat request, used to create a one-off SDK client, and not stored or
-  logged (uvicorn access logs do not include headers; the app never logs request headers). The base
-  URL is fixed by the server, so a key cannot be redirected to another host. Enable only behind HTTPS.
+  `X-LLM-Api-Key` header (with `X-LLM-Provider` / `X-LLM-Model`) with each chat request, used for that request only, and not stored or
+  logged (uvicorn access logs do not include headers; the app never logs request headers). Provider base URLs are fixed by the server, so a key cannot be redirected to another host; provider error text is scrubbed of the key. Enable only behind HTTPS.
 - **No key:** chat is shown as optional/not configured; all other features work.
 
 ## Session retention and cleanup

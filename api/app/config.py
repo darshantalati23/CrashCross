@@ -47,23 +47,32 @@ class Settings:
     chat_rate_per_min: int = _int("CHAT_RATE_PER_MIN", 12)
     # AI chat (optional). Server-managed key stays on the backend and is never returned.
     anthropic_api_key: str = os.environ.get("ANTHROPIC_API_KEY", "")
+    gemini_api_key: str = os.environ.get("GEMINI_API_KEY", "")
+    xai_api_key: str = os.environ.get("XAI_API_KEY", "")
     llm_model: str = os.environ.get("LLM_MODEL", "claude-opus-5-5")
     llm_effort: str = os.environ.get("LLM_EFFORT", "low")
     llm_timeout_seconds: int = _int("LLM_TIMEOUT_SECONDS", 60)
     llm_fallbacks: bool = _bool("LLM_FALLBACKS", True)
     # The SDK would otherwise honour an inherited ANTHROPIC_BASE_URL; pin it explicitly.
     llm_base_url: str = os.environ.get("LLM_BASE_URL", "https://api.anthropic.com")
-    # Bring-your-own-key: when true, a browser may send its own Anthropic key per request
-    # (header X-LLM-Api-Key). It is used for that request only and never stored or logged.
+    # Bring-your-own-key: when true, a browser may send its own provider key per request
+    # (header X-LLM-Api-Key) for the provider they select. It is used for that request only and never stored or logged.
     allow_byok: bool = _bool("ALLOW_BYOK", False)
 
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_mb * 1024 * 1024
 
+    def server_key(self, provider: str) -> str:
+        return {"anthropic": self.anthropic_api_key, "gemini": self.gemini_api_key, "grok": self.xai_api_key}.get(provider, "").strip()
+
+    @property
+    def server_providers(self) -> list[str]:
+        return [p for p in ("anthropic", "gemini", "grok") if self.server_key(p)]
+
     @property
     def server_ai_configured(self) -> bool:
-        return bool(self.anthropic_api_key.strip())
+        return bool(self.server_providers)
 
 
 settings = Settings()

@@ -53,7 +53,7 @@ app.add_middleware(
     allow_origins=settings.allowed_origins,
     allow_origin_regex=settings.allowed_origin_regex,
     allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["Content-Type", "X-LLM-Api-Key"],
+    allow_headers=["Content-Type", "X-LLM-Api-Key", "X-LLM-Provider", "X-LLM-Model"],
     expose_headers=["Content-Disposition"],
     max_age=600,
 )
@@ -163,14 +163,31 @@ class ChatIn(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
 
 
+@app.post("/api/models")
+async def models(request: Request, x_llm_api_key: str | None = Header(default=None),
+                 x_llm_provider: str | None = Header(default=None), x_llm_model: str | None = Header(default=None)):
+    """Discover the models available to the chosen provider/key and validate the selection (or pick one for Auto)."""
+    if not limiter.allow("chat:" + _ip(request), settings.chat_rate_per_min):
+        _err(429, "rate_limited", "Too many requests; wait a minute and try again.")
+    try:
+        return await chat_mod.check_model((x_llm_provider or "").strip() or None, (x_llm_api_key or "").strip() or None,
+                                          (x_llm_model or "").strip() or None)
+    except chat_mod.ChatUnavailable as e:
+        _err(503, "ai_unavailable", str(e))
+    except chat_mod.ChatProviderError as e:
+        _err(502, f"ai_{e.kind}", e.message)
+
+
 @app.post("/api/sessions/{sid}/chat")
-async def chat(sid: str, body: ChatIn, request: Request, x_llm_api_key: str | None = Header(default=None)):
+async def chat(sid: str, body: ChatIn, request: Request, x_llm_api_key: str | None = Header(default=None),
+               x_llm_provider: str | None = Header(default=None), x_llm_model: str | None = Header(default=None)):
     s = _session(sid)
     if not limiter.allow("chat:" + _ip(request), settings.chat_rate_per_min):
         _err(429, "rate_limited", "Too many chat requests; wait a minute and try again.")
     key = (x_llm_api_key or "").strip() or None
     try:
-        out = await chat_mod.answer(body.question.strip(), s.filename, s.df, s.overview, s.chat_history, key)
+        out = await chat_mod.answer(body.question.strip(), s.filename, s.df, s.overview, s.chat_history, key,
+                                   (x_llm_provider or "").strip() or None, (x_llm_model or "").strip() or None)
     except chat_mod.ChatUnavailable as e:
         _err(503, "ai_unavailable", str(e))
     except chat_mod.ChatProviderError as e:

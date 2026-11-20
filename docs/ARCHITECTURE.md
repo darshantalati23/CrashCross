@@ -10,7 +10,7 @@
             └─────────────────────────────────────────────────────────┼──────────────────────┘
                                                                       ▼
                                      FastAPI (Render web service, api/) — in-memory sessions
-                                       └── optional HTTPS call to Anthropic Messages API (chat)
+                                       └── optional HTTPS call to Anthropic / Gemini / xAI Grok (chat)
 ```
 
 ## Decisions
@@ -26,7 +26,7 @@
 | Backend | FastAPI, only for EDAgent | Uploads, aggregation, AI calls and exports need server code; research does not |
 | Storage | **None** (no DB, no accounts, no durable uploads) | Not required by any implemented feature; avoids personal-data retention and free-tier DB expiry |
 | Sessions | In-memory, token per upload, 60-min idle TTL, LRU cap, cleared on restart | Simple and honest for a single small instance (Render free has 512 MB RAM and an ephemeral disk) |
-| AI | Anthropic Messages API via official `anthropic` SDK; server key by default; BYOK optional (off) | Key never reaches the browser; grounding enforced server-side |
+| AI | Anthropic (official SDK), Gemini and Grok (REST via httpx) behind `api/app/providers.py`; server keys per provider; BYOK optional (off) | Key never reaches the browser; grounding enforced server-side |
 
 ## Frontend structure
 

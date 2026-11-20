@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import chat as chat_mod
+from app import providers
 from app.main import app
 from app.sessions import store
 
@@ -168,7 +169,8 @@ class FakeClient:
 
 def _fake(monkeypatch, replies):
     fake = FakeClient(replies)
-    monkeypatch.setattr(chat_mod, "_client", lambda key: fake)
+    monkeypatch.setattr(type(chat_mod.settings), "server_key", lambda self, p: "test-server-key")
+    monkeypatch.setattr(providers, "anthropic_client", lambda key: fake)
     return fake
 
 

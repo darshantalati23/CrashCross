@@ -60,7 +60,7 @@ by URL; publication restrictions are unchanged. `FigureFrame` still accepts the 
 | Item | Owner action |
 | --- | --- |
 | Sync + deploy the new commits | Push D-drive `main` to the deployment repository when approved, then redeploy Vercel (and Render for the API fixes) |
-| Live AI chat untested against Anthropic | Set `ANTHROPIC_API_KEY` locally, ask 3–4 questions (in-scope, ambiguous, unrelated), confirm grounding labels; adjust `LLM_MODEL`/`LLM_EFFORT` if needed |
+| Live AI chat untested against Anthropic, Gemini and Grok | Set a provider key locally (or use BYOK), run "Check key & model" (Auto), ask 3–4 questions (in-scope, ambiguous, unrelated), confirm grounding labels; Gemini/Grok request shapes follow current official docs but only mocked HTTP was tested; adjust `LLM_MODEL`/`LLM_EFFORT` (Anthropic) if needed |
 | Deployment | Push to a personal repo, then follow the dashboard tables in `docs/DEPLOYMENT.md` (Render first, then Vercel, then set `ALLOWED_ORIGINS`) |
 | Render memory | Budget 240 MB of session data + serial parsing, measured on 10 MB CSVs; watch `session_memory_mb` in `/api/health` after launch |
 | Publication of `aggregate_review` files | Team to confirm (see DATA_MAPPING "Publication policy") |

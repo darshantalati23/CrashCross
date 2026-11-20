@@ -13,7 +13,7 @@ Adapted (rewritten, not copied verbatim):
   (data-not-instructions, clarify/decline, follow-up reuse) — from `backend/app/services/ai/prompts.py`
   and `grounding.py`; here extended with a numeric grounding check on free-text explanations.
 - Provider error categories (auth / rate limit / timeout / unavailable) — from `services/ai/llm.py`;
-  here implemented with the official `anthropic` SDK exception classes.
+  here implemented with the official `anthropic` SDK exception classes and HTTP status mapping for Gemini and Grok.
 - Supported-format ideas (delimiter sniffing, zip-bomb guard for XLSX, formula-injection-safe CSV) —
   from `services/ingestion/` and `services/export/`.
 

@@ -37,6 +37,11 @@ Newest first. Keep short; details live in HANDOFF / VALIDATION.
 - Grid map axis fix; production preview verified; render.yaml MAX_SESSIONS=5 for 512 MB.
 - Open: live AI chat untested (no key); not deployed.
 
+## 2026-11-20 — EDAgent: Gemini and Grok providers
+- `api/app/providers.py`: small provider interface (`list_models`, `complete`) for Anthropic, Gemini, Grok; planner/explanation in `chat.py` use it unchanged.
+- `POST /api/models` discovers a key's models and validates the selection (or Auto) with a minimal request; chat takes `X-LLM-Provider` / `X-LLM-Model`.
+- Chat tab: provider selector, model selector (Auto + discovered), generic password key field. 40 API tests (`test_providers.py` added).
+
 ## 2026-11-20 — Milestone 3: verification + polish
 - `scripts/verify_site_data.py` (749 checks). Found 2 undocumented report CI roundings; noted on site.
 - Plotly cartesian bundle; correlation colours fixed; phone layouts; report reader scroll/page fixes.
