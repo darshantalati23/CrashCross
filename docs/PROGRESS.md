@@ -2,6 +2,17 @@
 
 Newest first. Keep short; details live in HANDOFF / VALIDATION.
 
+## 2026-11-20 — Milestone 6: QA fixes and requested removals (local commits on D:, not pushed/deployed)
+- Source: `analysis/CrashCross_QA_Evidence/` (21 findings). D-01 (CORS) already fixed upstream; not touched.
+- Removed: per-figure Data/How computed/Compare panels; Overview Data provenance; Resources public
+  downloads, data dictionary/codebooks, field inventory; Appendices supplementary index, contribution/bio/
+  references and evidence-gate topic; dead links to the non-public CrashCross repo.
+- Fixed: axis-type leakage (Plotly mutated a shared layout) in Figs 3.2/3.3 and Ch5 diagnostics; PDF
+  internal links (named destinations) in book + scroll modes; `?page=51`; render/zoom feedback; HTML
+  export JSON escaping (incl. ZIP); leading zeros; identifier detection; Fig 2.2 colour scale; grid-map
+  reset; Figures 4.1/4.2 sharp crops from the public PDF + enlarged view; jargon; accessibility.
+- Checks: 763 data/UI checks, 30 API tests, production build — all pass. Browser-verified.
+
 ## 2026-11-20 — Milestone 5: deployment readiness (Vercel Hobby + Render Free)
 - Fresh-clone build without `analysis/` ✅; Render install in fresh 3.13.7 venv ✅; start command
   (`--workers 1`) served `/api/health` ✅; CORS allow/deny ✅.

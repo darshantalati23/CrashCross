@@ -1,4 +1,4 @@
-# Handoff — current state (2026-11-20)
+# Handoff — current state (2026-11-20, after QA fixes)
 
 ## State
 
@@ -14,10 +14,44 @@ Deployment-ready for Vercel Hobby + Render Free (see `docs/DEPLOYMENT.md`, check
 4. The research inputs (`analysis/`, root PDF) are not in git. To rebuild `web/public/data` you need
    the export folder locally; otherwise use the committed bundle as-is.
 
+## Latest round (QA fixes) — see PROGRESS milestone 6
+
+Development source is `D:\Darshan\CrashCross`; commits 348f638…a7d4744 are **local** on `main` here.
+They have **not** been pushed to any remote, synced to the C-drive personal repository, or deployed, so the
+live site still shows the pre-fix behaviour until someone syncs and redeploys.
+
+QA findings status (`analysis/CrashCross_QA_Evidence/CrashCross_QA_Report.md`):
+
+| ID | Status |
+| --- | --- |
+| D-01 CORS | Already fixed in hosting; not changed here |
+| D-02 HTML export injection | Fixed (`report.json_for_script`), test covers HTML + ZIP |
+| D-03 / D-04 category axes | Fixed: root cause was Plotly writing autotyped `category` into a shared layout object; layout cloned per render + explicit axis types; browser-checked at 627 px and desktop |
+| D-05 dead repo links | Removed (repository is not public); EDAgent link verified 200 |
+| D-06 missing spaces | Text lived in the removed provenance/how-computed panels |
+| D-07 jargon | Replaced in footer, Ch 3.7 note, Ch 5 caution, table footnotes, Fig 4.1/4.2 reason |
+| D-08 leading zeros / D-09 identifiers | Fixed + tests |
+| D-10 grid map | Fixed (reset restores resolution; badge; instructions) |
+| D-11 `?page=51` | Fixed (clamped) |
+| D-12 cover overlap | In the PDF itself; PDF not modified |
+| D-13 zoom limits | Fixed (buttons disable at 50%/300%); fullscreen **unconfirmed** (needs a real user gesture to test) |
+| D-14 student IDs public | Team decision (report content unchanged) |
+| D-15 Python 3.13.18 vs notebook 3.13.5 | Not changed (report wording rule); team to confirm |
+| D-16 titles / duplicate link / skip link | Fixed |
+| D-17 inventory filter | Feature removed by request |
+| D-18 headings, table names, Escape, loading | Fixed; inline link target size not changed |
+| D-19 | Stray-dot section removed; D.1 axis overlap fixed; Fig 2.2 colours fixed; `index_0` CSV headers remain in the data files (downloads no longer linked); §5.4 grammar is report wording |
+| D-20 | `bins=0`/`top_n=0` rejected; heatmap defaults to numeric columns; renames noted; double delete is idempotent by design |
+| D-21 | Informational |
+
+Note: removed panels are UI-only. Published data files under `web/public/data` are unchanged and still served
+by URL; publication restrictions are unchanged. `FigureFrame` still accepts the old props but does not render them.
+
 ## Open items / blockers
 
 | Item | Owner action |
 | --- | --- |
+| Sync + deploy the new commits | Push D-drive `main` to the deployment repository when approved, then redeploy Vercel (and Render for the API fixes) |
 | Live AI chat untested against Anthropic | Set `ANTHROPIC_API_KEY` locally, ask 3–4 questions (in-scope, ambiguous, unrelated), confirm grounding labels; adjust `LLM_MODEL`/`LLM_EFFORT` if needed |
 | Deployment | Push to a personal repo, then follow the dashboard tables in `docs/DEPLOYMENT.md` (Render first, then Vercel, then set `ALLOWED_ORIGINS`) |
 | Render memory | Budget 240 MB of session data + serial parsing, measured on 10 MB CSVs; watch `session_memory_mb` in `/api/health` after launch |

@@ -89,3 +89,20 @@
   position: absolute;
   inset: 0;
 }
+
+/* Clickable PDF link areas in the report reader. */
+.pdf-link {
+  display: block;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.pdf-link:hover {
+  background: rgba(31, 95, 139, 0.12);
+}
+.pdf-link:focus-visible {
+  outline: 2px solid #1f5f8b;
+  outline-offset: 1px;
+}

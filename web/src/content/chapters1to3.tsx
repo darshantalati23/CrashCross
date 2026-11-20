@@ -402,12 +402,11 @@ export function Chapter3() {
           intersection type, month and year fixed effects; sparse levels are pooled. Odds ratios are reported with HC0 robust confidence
           intervals, and q-values use Benjamini–Hochberg adjustment.
         </p>
-        <Callout kind="note" title="Export note">
-          The exported v6 model formula also includes the validated speed-limit term (SPEED_LIMIT_VALID), which the sentence above does not
-          enumerate. The exported formula is the exact one that was fitted; this difference is documented by the export verification.
-          Two confidence limits in the next paragraph are printed slightly differently from the exported estimates: the pedestrian upper
-          limit is 12.0946 (12.09 at two decimals; printed 12.10) and the rear-end lower limit is 0.3949 (0.39; printed 0.40). The figure and
-          its table below show the exported values; the report wording is kept unchanged.
+        <Callout kind="note" title="Note on the published numbers">
+          The fitted model also includes the validated speed limit (SPEED_LIMIT_VALID), which the sentence above does not list. Two
+          confidence limits in the next paragraph are rounded slightly differently from the saved estimates: the pedestrian upper limit is
+          12.0946 (12.09 to two decimals; printed 12.10) and the rear-end lower limit is 0.3949 (0.39; printed 0.40). Figure 3.8 uses the
+          saved values; the report wording is kept unchanged.
         </Callout>
         <p>
           Compared with angle collisions, the adjusted odds ratio is 10.63 for pedestrian crashes (95% CI 9.35–12.10; q &lt; 0.001), 2.74 for

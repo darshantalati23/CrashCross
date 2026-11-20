@@ -154,6 +154,32 @@ for ref in sorted(refs):
 for page in (15, 17, 18, 19, 20, 21, 22, 24, 26, 27, 29, 31):
     check(f"report page image {page}", (DATA / f"reference_figures/report_page_{page}.png").exists())
 
+# ---------------------------------------------------------------- 4. UI regressions (QA 2026-11-20)
+def src_of(rel: str) -> str:
+    return (ROOT / "web" / "src" / rel).read_text(encoding="utf-8")
+
+
+plot_src = src_of("components/Plot.tsx")
+check("Plot clones layout per render (no autotype leakage)", "structuredClone(baseLayout)" in plot_src)
+fig_src, fig2_src = src_of("research/figures.tsx"), src_of("research/figures2.tsx")
+check("Fig 3.2 numeric axes explicit", fig_src.count("yaxis: { type: 'linear', title: { text: 'Records' } }") >= 4)
+check("Fig 3.3 numeric axes explicit", fig_src.count("type: 'linear', title: { text: 'Crash year' }") == 2)
+check("Fig 2.2 uses explicit magma_r stops (Plotly has no 'Magma' name)", "MAGMA_R" in fig_src and "colorscale: 'Magma'" not in fig_src)
+check("Ch5 calibration axes explicit", "type: 'linear', title: { text: 'Mean predicted probability' }" in fig2_src)
+check("Ch5 ROC/PR axes explicit", "type: 'linear', title: { text: kind === 'pr' ? 'Recall'" in fig2_src)
+check("Grid map reset restores resolution", "setDec('2')" in fig2_src and "dec !== '2'" in fig2_src)
+frame_src = src_of("components/FigureFrame.tsx")
+for removed in ("How this was computed", "Compare with the report", "and exact values"):
+    check(f"FigureFrame no longer renders '{removed}'", removed not in frame_src)
+res_src, ov_src, app_src = src_of("pages/Resources.tsx"), src_of("pages/Overview.tsx"), src_of("content/appendices.tsx")
+check("Resources: removed downloads/dictionary/inventory", all(x not in res_src for x in ("Public data downloads", "Data dictionary and codebooks", "Field inventory")))
+check("Resources: no dead CrashCross repository link", "ExploratoryDataAnalysis/CrashCross" not in res_src)
+check("Overview: Data provenance removed", "Data provenance" not in ov_src)
+check("Appendices: S, contribution/bio and evidence-gate topics removed", all(x not in app_src for x in ("Supplementary notebook analyses", "Short Bio", "Evidence gates for analyses not run")))
+rep_src = src_of("pages/Report.tsx")
+check("Report reader resolves PDF link destinations", "getDestination" in rep_src and "getPageIndex" in rep_src and "onNavigate={goTo}" in rep_src)
+check("Report reader clamps ?page to the page count", "Math.min(Math.max(1, p), d.numPages)" in rep_src)
+
 print(f"{passes} checks passed, {len(failures)} failed ({len(refs)} frontend data references checked)")
 for n in notes:
     print("NOTE", n)

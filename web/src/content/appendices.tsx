@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Disclosure } from '../components/ui';
 import { ChapterLayout, Example, H, S, toc } from './layout';
 import {
-  TableA_1, TableA_2, TableD_1, TableD_2, TableE_1, TableE_2, TableE_3, TableG_1, TableG_2, TableG_3, TableG_4,
+  TableA_1, TableA_2, TableD_1, TableD_2, TableE_1, TableE_2, TableE_3, TableG_1, TableG_2, TableG_3,
 } from '../research/tables';
 import { TableF_1 } from '../research/figures2';
-import { SupplementaryIndex } from '../research/supplementary';
 
 export function Appendices() {
   return (
@@ -13,11 +11,11 @@ export function Appendices() {
       eyebrow="Appendices"
       title="Appendices"
       pages="25–40"
-      lead="Variable notes, definitions, software, annual ledgers, full category tables, model review tables, the completeness and geographic audit, and the back matter of the report."
+      lead="Variable notes, definitions, software, annual ledgers, full category tables, model review tables, and the completeness and geographic audit."
       toc={toc([
         ['A', 'Selected Variable Notes'], ['B', 'Key Definitions and Metric Reading'], ['C', 'Software and Reproducibility'],
         ['D', 'Annual Record and Outcome-Coverage Ledger'], ['E', 'Full Common-Era Category Tables'], ['F', 'Detailed Model Review Tables'],
-        ['G', 'Source-Field Completeness and Geographic Audit'], ['S', 'Supplementary notebook analyses'], ['·', 'Contribution, bio and references'],
+        ['G', 'Source-Field Completeness and Geographic Audit'],
       ])}
       prev={{ to: '/conclusion', label: 'Conclusion & Future Scope' }}
       next={{ to: '/report', label: 'Read the full report' }}
@@ -84,7 +82,7 @@ export function Appendices() {
           the later test period separate from model development.
         </p>
         <p className="text-sm">
-          The original notebook and the data provenance of this website are listed under <Link className="link" to="/resources">Resources</Link>.
+          The original notebook is listed under <Link className="link" to="/resources">Resources</Link>.
         </p>
       </S>
 
@@ -196,64 +194,8 @@ export function Appendices() {
           official coordinate source. The large upper-tail discrepancies mean the two coordinate formats should not be treated as
           interchangeable.
         </p>
-        <H>Evidence gates for analyses not run</H>
-        <TableG_4 />
-        <p>
-          Without these inputs, the maps can guide further location review but cannot support a ranked list of hazardous sites or an estimate of
-          expected crash reductions.
-        </p>
       </S>
 
-      <S number="S" title="Supplementary notebook analyses">
-        <p>
-          The export package also catalogues notebook analyses that do not appear as numbered report items. They are listed here for
-          completeness; interactive views of the model diagnostics are in <Link className="link" to="/model-fitting#sec-5-4">§5.4</Link> and the
-          rounded-grid map in <Link className="link" to="/feature-engineering#sec-4-4">§4.4</Link>. They do not add conclusions beyond the report.
-        </p>
-        <SupplementaryIndex />
-      </S>
-
-      <S number="·" title="Contribution, bio and references">
-        <H>Group Contribution</H>
-        <p>
-          All four members of Group B8 contributed jointly to checking the dataset, conducting the analysis and preparing this report.
-        </p>
-        <H>Short Bio</H>
-        <p>
-          Vishesh Shah (ID 202403050), Atharv Trivedi (ID 202401230), Darshan Talati (ID 202401046) and Dharmesh Upadhyay (ID 202401049) are
-          members of Group B8 in IT 462 at Dhirubhai Ambani University and co-authors of this report.
-        </p>
-        <H>References</H>
-        <p>
-          [1] Western Pennsylvania Regional Data Center (WPRDC). <em>Allegheny County Crash Data</em>, resource ID
-          2c13021f-74a9-4289-a1e5-fe0472c89881. Public dataset. Available at:{' '}
-          <a className="link break-all" href="https://data.wprdc.org/dataset/allegheny-county-crash-data/resource/2c13021f-74a9-4289-a1e5-fe0472c89881" target="_blank" rel="noreferrer">
-            https://data.wprdc.org/dataset/allegheny-county-crash-data/resource/2c13021f-74a9-4289-a1e5-fe0472c89881
-          </a>
-          .
-        </p>
-        <Disclosure summary="Front matter (acknowledgment, declaration, certificate)" className="mt-4">
-          <div className="report-prose">
-            <p className="font-semibold">Acknowledgment</p>
-            <p>
-              We sincerely thank Dr. Gopinath Panda for his guidance and feedback during this project. His comments helped us approach the data
-              carefully and explain the results clearly. We also acknowledge the Western Pennsylvania Regional Data Center and Allegheny County for
-              making the crash records available for public analysis.
-            </p>
-            <p className="font-semibold">Declaration</p>
-            <p>
-              We, the members of Group B8, declare that this report presents the work undertaken for the IT 462 exploratory data analysis project
-              on Allegheny County crash records. The analyses and figures are based on the records described in this report, and the public data
-              source is acknowledged in the data-collection section.
-            </p>
-            <p className="font-semibold">Certificate</p>
-            <p>
-              The report includes an instructor certificate page (PDF page 4) for Group B8’s IT 462 project; see the{' '}
-              <Link className="link" to="/report?page=4">report viewer</Link>.
-            </p>
-          </div>
-        </Disclosure>
-      </S>
     </ChapterLayout>
   );
 }

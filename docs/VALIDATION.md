@@ -1,5 +1,26 @@
 # Validation record — 2026-11-20
 
+## QA-fix round (latest)
+
+- `python scripts/verify_site_data.py`: 763 passed, 0 failed (adds 14 UI regression checks: explicit axis
+  types, layout cloning, magma_r stops, grid-map reset, removed panels/sections, no dead repo link, PDF link
+  resolution and page clamp).
+- `pytest api/tests`: 30 passed (adds: HTML+ZIP export escaping, leading zeros, no silent coercion,
+  identifier vs measurement, bins/top_n/heatmap edge cases).
+- `npm run build`: success.
+- Browser (desktop and 627×690): 23 charts on Visualization with no numeric data on category axes; Fig 3.2
+  annual line spans 9,863–12,908 (= CSV); Fig 3.3 linear axes; Ch5 calibration points equal
+  `calibration_bin_counts.csv` and the diagonal is a line; Fig 2.2 magma_r. Report: contents link →
+  §3.1 opens spread 16–17 (`?page=17`); list-of-tables link → page 13; scroll mode link → page 25 at top;
+  page-50 external links open in a new tab; `?page=51` → 50; zoom buttons disable at limits. Figures 4.1/4.2
+  crops render from the PDF and enlarge in a dialog. EDAgent UI: leading-zero ZIPs kept with a note,
+  `record_id` identifier, exported report has 3 script elements and no raw injected markup.
+- Not verified: fullscreen (needs a real user gesture); the PDF has no internal link that points to an
+  earlier page, so a backward *link* could not be clicked; backward navigation was exercised via toolbar.
+
+## Earlier record
+
+
 Environment: Windows 11, Node 22.16.0, Python 3.13.7, Chromium (Claude desktop browser pane).
 
 ## Export run

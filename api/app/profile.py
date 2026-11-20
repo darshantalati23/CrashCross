@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pandas as pd
 
@@ -10,23 +12,44 @@ from .util import clean
 MAX_CORR_COLUMNS = 15
 
 
+_ID_NAME = re.compile(r"(^|[_\s-])(id|uid|uuid|guid|key|crn|zip|zipcode|postcode|phone|ssn|account|serial)$|^(id|uid|uuid)[_\s-]|(_no|_num)$", re.I)
+_CODE_NAME = re.compile(r"(^|[_\s-])(code|cd|type|class|category|status|group)$", re.I)
+
+
 def column_kind(s: pd.Series, n_rows: int) -> str:
-    """Analytical role guess: numeric, categorical, datetime, boolean, text or identifier."""
+    """Analytical role guess: numeric, categorical, datetime, boolean, text or identifier.
+
+    Identifiers: name looks like an id/key/zip/phone and >= 90% of values are distinct, or (any name)
+    every value is distinct in >= 20 rows and the values are text or consecutive-looking integers.
+    Ordinary numeric measurements (floats, or integers with repeats) stay numeric. Integer columns
+    named like a code/type/group with at most 20 levels are treated as categorical labels.
+    """
     if pd.api.types.is_bool_dtype(s) or str(s.dtype) == "boolean":
         return "boolean"
     if pd.api.types.is_datetime64_any_dtype(s):
         return "datetime"
     nn = s.dropna()
-    nunique = nn.nunique()
+    n = len(nn)
+    nunique = int(nn.nunique())
+    name = str(s.name or "")
+    ratio = nunique / n if n else 0
+    is_int = pd.api.types.is_integer_dtype(nn) or (pd.api.types.is_float_dtype(nn) and n and bool((nn == nn.round()).all()))
     if pd.api.types.is_numeric_dtype(s):
-        if n_rows >= 20 and nunique == len(nn) and pd.api.types.is_integer_dtype(nn) and nunique > 0.95 * n_rows:
+        if n >= 10 and is_int and _ID_NAME.search(name) and ratio >= 0.9:
             return "identifier"
+        if n >= 20 and pd.api.types.is_integer_dtype(nn) and nunique == n and (nn.max() - nn.min() + 1) <= 2 * n:
+            return "identifier"  # e.g. 1001..1250 row numbers
+        if is_int and _CODE_NAME.search(name) and nunique <= 20:
+            return "categorical"
         return "numeric"
-    if len(nn) and nunique == len(nn) and len(nn) >= 20:
+    if n >= 10 and _ID_NAME.search(name) and ratio >= 0.9:
         return "identifier"
-    if len(nn):
+    if n >= 20 and nunique == n:
         avg_len = nn.astype(str).str.len().mean()
-        if nunique > 0.5 * len(nn) and avg_len > 30:
+        return "text" if avg_len > 30 else "identifier"
+    if n:
+        avg_len = nn.astype(str).str.len().mean()
+        if nunique > 0.5 * n and avg_len > 30:
             return "text"
     return "categorical"
 

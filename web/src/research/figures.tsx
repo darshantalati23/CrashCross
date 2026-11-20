@@ -9,6 +9,12 @@ import { Row, fmtFixed, fmtInt, fmtQ, useCsvs } from '../lib/data';
 // helpers
 // ---------------------------------------------------------------------------------
 
+/** Matplotlib magma_r (as in the notebook): 0% missing = pale, 100% = near-black. */
+const MAGMA_R: [number, string][] = [
+  [0, '#fcfdbf'], [0.125, '#fec287'], [0.25, '#fb8761'], [0.375, '#e55064'], [0.5, '#b5367a'],
+  [0.625, '#812581'], [0.75, '#4f127b'], [0.875, '#1c1044'], [1, '#000004'],
+];
+
 const num = (v: unknown) => (v === null || v === undefined ? NaN : Number(v));
 const col = (rows: Row[], k: string) => rows.map((r) => r[k]);
 
@@ -24,7 +30,7 @@ function PanelGrid({ children, cols = 2 }: { children: ReactNode; cols?: 2 | 3 }
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <h4 className="px-2 text-center text-sm font-semibold text-ink-soft">{title}</h4>
+      <h3 className="px-2 text-center text-sm font-semibold text-ink-soft">{title}</h3>
       {children}
     </div>
   );
@@ -131,7 +137,7 @@ export function Figure2_2() {
             y: col(s.data.d, 'index_0') as string[],
             z: s.data.d.map((r) => years.map((y) => num(r[y]))),
             zmin: 0, zmax: 100,
-            colorscale: 'Magma', reversescale: true,
+            colorscale: MAGMA_R,
             colorbar: { title: { text: 'Missing %' } },
             hovertemplate: '<b>%{y}</b>, %{x}<br>Missing: %{z:.2f}%<extra></extra>',
             xgap: 1, ygap: 1,
@@ -235,19 +241,19 @@ export function Figure3_2() {
             <Plot ariaLabel="Line chart of crash records by year, 2004–2024, lowest 9,863 in 2020 and highest 12,908 in 2016." height={280}
               data={[{ type: 'scatter', mode: 'lines+markers', x: col(d.annual, 'CRASH_YEAR') as number[], y: col(d.annual, 'value') as number[],
                 line: { color: '#4c72b0' }, hovertemplate: '%{x}: %{y:,} records<extra></extra>' }]}
-              layout={{ ...small, xaxis: { title: { text: 'Year' }, dtick: 2 }, yaxis: { title: { text: 'Records' } } }} />
+              layout={{ ...small, xaxis: { type: 'linear', title: { text: 'Year' }, dtick: 2 }, yaxis: { type: 'linear', title: { text: 'Records' } } }} />
           </Panel>
           <Panel title="Crash records by month">
             <Plot ariaLabel="Bar chart of crash records by month." height={280} data={[bar(d.monthly, 'CRASH_MONTH', 'count', 'Month')]}
-              layout={{ ...small, xaxis: { title: { text: 'Month' }, type: 'category' }, yaxis: { title: { text: 'Records' } } }} />
+              layout={{ ...small, xaxis: { title: { text: 'Month' }, type: 'category' }, yaxis: { type: 'linear', title: { text: 'Records' } } }} />
           </Panel>
           <Panel title="Crash records by day-of-week code">
             <Plot ariaLabel="Bar chart of crash records by recorded day code 1 to 7." height={280} data={[bar(d.weekday, 'DAY_OF_WEEK', 'count', 'Day code')]}
-              layout={{ ...small, xaxis: { title: { text: 'Recorded day code' }, type: 'category' }, yaxis: { title: { text: 'Records' } } }} />
+              layout={{ ...small, xaxis: { title: { text: 'Recorded day code' }, type: 'category' }, yaxis: { type: 'linear', title: { text: 'Records' } } }} />
           </Panel>
           <Panel title="Crash records by hour">
             <Plot ariaLabel="Bar chart of crash records by valid recorded hour of day, peaking in the late afternoon." height={280} data={[bar(d.hour, 'HOUR_VALID', 'count', 'Hour')]}
-              layout={{ ...small, xaxis: { title: { text: 'Hour of day' }, type: 'category' }, yaxis: { title: { text: 'Records' } } }} />
+              layout={{ ...small, xaxis: { title: { text: 'Hour of day' }, type: 'category' }, yaxis: { type: 'linear', title: { text: 'Records' } } }} />
           </Panel>
         </PanelGrid>
       )}
@@ -293,7 +299,7 @@ export function Figure3_3() {
               data={[{ type: 'scatter', mode: 'lines+markers', name: 'Fatal share', x: col(d.fatal, 'CRASH_YEAR') as number[], y: col(d.fatal, 'fatal_percent_of_known') as number[],
                 line: { color: '#4c72b0' }, customdata: d.fatal.map((r) => [r.fatal_records, r.known_severity_records]),
                 hovertemplate: '%{x}: %{y:.2f}%<br>%{customdata[0]:,} fatal of %{customdata[1]:,} known-severity<extra></extra>' }]}
-              layout={{ ...small, showlegend: false, xaxis: { title: { text: 'Crash year' }, dtick: 2 }, yaxis: { title: { text: 'Percent' } },
+              layout={{ ...small, showlegend: false, xaxis: { type: 'linear', title: { text: 'Crash year' }, dtick: 2 }, yaxis: { type: 'linear', title: { text: 'Percent' }, tickformat: '.2f' },
                 shapes: [{ type: 'line', x0: 2016, x1: 2016, yref: 'paper', y0: 0, y1: 1, line: { color: PALETTE.red, dash: 'dash', width: 1.5 } }],
                 annotations: [{ x: 2016, yref: 'paper', y: 1, text: 'Severity standard changed', showarrow: false, xanchor: 'left', font: { size: 11, color: PALETTE.red } }] }} />
           </Panel>
@@ -302,7 +308,7 @@ export function Figure3_3() {
               data={[{ type: 'scatter', mode: 'lines+markers', x: col(d.sf, 'CRASH_YEAR') as number[], y: col(d.sf, 'serious_fatal_percent_of_known') as number[],
                 line: { color: '#dd8452' }, customdata: d.sf.map((r) => [r.serious_fatal_records, r.known_severity_records]),
                 hovertemplate: '%{x}: %{y:.2f}%<br>%{customdata[0]:,} serious/fatal of %{customdata[1]:,} known-severity<extra></extra>' }]}
-              layout={{ ...small, xaxis: { title: { text: 'Crash year' }, dtick: 1 }, yaxis: { title: { text: 'Percent' } } }} />
+              layout={{ ...small, xaxis: { type: 'linear', title: { text: 'Crash year' }, dtick: 1 }, yaxis: { type: 'linear', title: { text: 'Percent' }, tickformat: '.1f' } }} />
           </Panel>
         </PanelGrid>
       )}
@@ -555,7 +561,7 @@ export function Figure3_8() {
       x: idx.map((i) => num(r[i].odds_ratio)),
       error_x: { type: 'data', symmetric: false, array: idx.map((i) => num(r[i].ci_upper_95) - num(r[i].odds_ratio)), arrayminus: idx.map((i) => num(r[i].odds_ratio) - num(r[i].ci_lower_95)), color, thickness: 2 },
       customdata: idx.map((i) => [r[i].ci_lower_95, r[i].ci_upper_95, fmtQ(r[i].fdr_bh_q), r[i].index_0]),
-      hovertemplate: '<b>%{y}</b><br>OR %{x:.2f} (95% CI %{customdata[0]:.2f}–%{customdata[1]:.2f})<br>BH q = %{customdata[2]}<br><span style="font-size:11px">%{customdata[3]}</span><extra></extra>',
+      hovertemplate: '<b>%{y}</b><br>OR %{x:.2f} (95% CI %{customdata[0]:.2f}–%{customdata[1]:.2f})<br>BH-adjusted q = %{customdata[2]}<extra></extra>',
     } as Data;
   };
   const yOrder = r.map((x, i) => `${termLabel(String(x.index_0)).family}: ${labels[i]}`);

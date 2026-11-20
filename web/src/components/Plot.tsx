@@ -81,7 +81,9 @@ export function useWidth<T extends HTMLElement>() {
 export function Plot({ data, layout, height = 380, config, ariaLabel, onClick }: PlotProps) {
   const reduced = useReducedMotion();
   const [box, width] = useWidth<HTMLDivElement>();
-  const merged = deepMerge(baseLayout, { ...layout, height, autosize: true } as Partial<Layout>);
+  // Fresh copies every render: Plotly writes autodetected axis types back into the layout object it
+  // receives, so a shared base object would leak e.g. a category y-axis from one chart into the next.
+  const merged = deepMerge(structuredClone(baseLayout), { ...structuredClone(layout ?? {}), height, autosize: true } as Partial<Layout>);
   if (width < 640) {
     // Phones: compact margins and fonts so the plotting area keeps most of the width.
     const m = (merged.margin ?? {}) as { l?: number; r?: number; t?: number; b?: number };
@@ -105,7 +107,7 @@ export function Plot({ data, layout, height = 380, config, ariaLabel, onClick }:
         }
       >
         <LazyPlot
-          data={data}
+          data={data.map((t) => ({ ...t }))}
           layout={merged}
           useResizeHandler
           style={{ width: '100%', height }}

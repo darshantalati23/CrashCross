@@ -8,9 +8,9 @@ import {
 import { Table6_1 } from '../research/tables';
 
 const MAP_REASON =
-  'The exported hexbin polygons behind this figure are classified internal_review_only in the export’s access policy, so they are not ' +
-  'published on this website and the map is not reconstructed here. The page image from the report is shown instead. The interactive ' +
-  'supplementary grid map below uses separate, publishable rounded-grid summaries.';
+  'The exact map data behind this figure are restricted to internal review in the analysis export, so this website does not ' +
+  'publish or redraw them. The figure is shown exactly as it appears in the report. The interactive supplementary grid map ' +
+  'below uses separate grid summaries that may be published.';
 
 export function Chapter4() {
   return (
@@ -144,9 +144,6 @@ export function Chapter4() {
             crashes, plus traffic exposure is what allows a fairer frequency comparison.
           </p>
         </Example>
-        <p className="text-sm">
-          Evidence gates for the analyses not run: <Link className="link" to="/appendices#table-g-4">Table G.4</Link>.
-        </p>
       </S>
     </ChapterLayout>
   );
@@ -165,7 +162,7 @@ export function Chapter5() {
     >
       <Callout kind="caution" title="Review status">
         All results on this page come from saved evaluation artifacts of the export run; no model is run in your browser or on a server. The
-        fitted models remain <strong>NOT_APPROVED_FOR_PRODUCTION</strong> review artifacts and are not offered as a prediction service.
+        fitted models are research artifacts that have <strong>not been approved for real-world use</strong>, and they are not offered as a prediction service.
       </Callout>
       <S number="5.1" title="Outcome and evaluation design">
         <p>
@@ -263,7 +260,7 @@ export function Chapter5() {
           <CalibrationFigure />
           <CurvesFigure />
           <PermutationFigure />
-          <h4 className="mt-6 font-semibold">Confusion matrices at the illustrative 0.50 threshold</h4>
+          <h3 className="mt-6 font-semibold">Confusion matrices at the illustrative 0.50 threshold</h3>
           <div className="mt-2"><ConfusionTables /></div>
         </Disclosure>
       </S>

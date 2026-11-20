@@ -1,6 +1,12 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+
+const TITLES: Record<string, string> = {
+  '/': 'Overview', '/introduction': 'Introduction', '/data-cleaning': 'Data Cleaning', '/visualization': 'Visualization',
+  '/feature-engineering': 'Feature Engineering', '/model-fitting': 'Model Fitting', '/conclusion': 'Conclusion & Future Scope',
+  '/appendices': 'Appendices', '/report': 'Report', '/resources': 'Resources', '/edagent': 'EDAgent',
+};
 
 export const RESEARCH_TABS = [
   { to: '/', label: 'Overview', end: true },
@@ -46,12 +52,35 @@ export function Layout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => setOpen(false), [pathname]);
+  // Escape closes the mobile menu and returns focus to its toggle.
+  const toggle = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        toggle.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+  // Distinct document title per route.
+  useEffect(() => {
+    const t = TITLES[pathname] ?? 'Page not found';
+    document.title = pathname === '/' ? 'CrashCross — Allegheny County crash records, 2004–2024' : `${t} · CrashCross`;
+  }, [pathname]);
   const isEdagent = pathname.startsWith('/edagent');
+  const skip = () => {
+    const main = document.getElementById('main');
+    main?.focus();
+    main?.scrollIntoView();
+  };
   return (
     <div className="flex min-h-screen flex-col bg-paper text-ink">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">
+      <button type="button" onClick={skip} className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">
         Skip to content
-      </a>
+      </button>
       <ScrollManager />
       <header className="sticky top-0 z-40 border-b border-paper-line bg-paper/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 pt-3 lg:px-8">
@@ -63,15 +92,8 @@ export function Layout({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <div className="flex items-center gap-2">
-            <NavLink
-              to="/edagent"
-              className={({ isActive }) =>
-                `hidden rounded-md border px-3 py-1.5 text-sm font-semibold sm:inline-block ${isActive ? 'border-accent bg-accent text-white' : 'border-accent/40 text-accent-dark hover:bg-accent-soft'}`
-              }
-            >
-              EDAgent tool
-            </NavLink>
             <button
+              ref={toggle}
               type="button"
               className="rounded-md p-2 text-ink-soft hover:bg-paper-line/50 lg:hidden"
               aria-expanded={open}
@@ -113,7 +135,7 @@ export function Layout({ children }: { children: ReactNode }) {
         )}
         {!open && <div className="h-3 lg:hidden" />}
       </header>
-      <main id="main" className="flex-1">
+      <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
         {children}
       </main>
       <footer className="border-t border-paper-line bg-white/60">
@@ -124,7 +146,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <p>
             {isEdagent
               ? 'EDAgent analyses only the file you upload; it is separate from the research results.'
-              : 'Research figures are drawn from the verified export run v6-export-20261120-08.'}
+              : 'Figures and tables are drawn from the project’s saved, verified analysis results.'}
           </p>
         </div>
       </footer>

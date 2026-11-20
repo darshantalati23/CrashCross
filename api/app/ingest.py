@@ -62,7 +62,8 @@ def _parse_delimited(raw: bytes, ext: str) -> Parsed:
         except csv.Error:
             sep = ","
     try:
-        df = pd.read_csv(io.StringIO(text), sep=sep, low_memory=False, nrows=settings.max_rows + 1)
+        # Read every cell as text; _tidy() converts columns only when it is lossless (keeps leading zeros).
+        df = pd.read_csv(io.StringIO(text), sep=sep, dtype=str, keep_default_na=True, nrows=settings.max_rows + 1)
     except (pd.errors.ParserError, ValueError) as e:
         raise IngestError(f"Could not parse the file as delimited text: {str(e)[:200]}") from None
     names = {",": "comma", ";": "semicolon", "\t": "tab", "|": "pipe"}
@@ -153,7 +154,10 @@ def _tidy(p: Parsed) -> Parsed:
         else:
             seen[name] = 0
         cols.append(name)
+    renamed = [f"{orig} → {new}" for orig, new in zip(map(str, df.columns), cols) if str(orig).strip() != new]
     df.columns = cols
+    if renamed:
+        p.notes.append("Column names adjusted to be unique and non-empty: " + "; ".join(renamed[:10]) + ("…" if len(renamed) > 10 else "") + ".")
     df = df.dropna(how="all")
     if df.empty or len(df.columns) == 0:
         raise IngestError("No data rows were found in the file.")
@@ -161,7 +165,8 @@ def _tidy(p: Parsed) -> Parsed:
         raise IngestError(f"The file has more than {settings.max_rows:,} rows, the limit for this service.")
     if len(df.columns) > settings.max_columns:
         raise IngestError(f"The file has {len(df.columns)} columns; the limit is {settings.max_columns}.")
-    conversions = []
+    conversions, preserved = [], []
+    textual = p.file_format in ("CSV", "TSV")  # every cell arrived as text
     for c in df.columns:
         s = df[c]
         if s.dtype != object:
@@ -170,17 +175,25 @@ def _tidy(p: Parsed) -> Parsed:
         if non_null.empty:
             continue
         as_str = non_null.astype(str).str.strip()
-        # Numbers stored as text (allow thousands separators).
-        num = pd.to_numeric(as_str.str.replace(",", "", regex=False), errors="coerce")
-        if num.notna().mean() >= 0.98:
-            df[c] = pd.to_numeric(s.astype(str).str.strip().str.replace(",", "", regex=False), errors="coerce").where(s.notna())
-            conversions.append(f"{c}: text → number")
+        # Codes such as ZIP codes or phone numbers: keep as text when any value has a leading zero.
+        if as_str.str.match(r"^[+-]?0\d").any():
+            if pd.to_numeric(as_str, errors="coerce").notna().all():
+                preserved.append(c)
             continue
-        # Dates stored as text.
-        if as_str.str.match(r"^\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}").mean() >= 0.9:
-            dt = pd.to_datetime(s, errors="coerce", format="mixed")
-            if dt.notna().sum() >= 0.95 * len(non_null):
-                df[c] = dt
+        # Numbers stored as text: convert only when EVERY value parses (no silent loss).
+        thousands = as_str.str.match(r"^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$")
+        cleaned = as_str.where(~thousands, as_str.str.replace(",", "", regex=False))
+        num = pd.to_numeric(cleaned, errors="coerce")
+        if num.notna().all():
+            df[c] = num.reindex(s.index)
+            if not textual or thousands.any():
+                conversions.append(f"{c}: text → number" + (" (thousands separators removed)" if thousands.any() else ""))
+            continue
+        # Dates stored as text: every value must parse.
+        if as_str.str.match(r"^\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}").all():
+            dt = pd.to_datetime(as_str, errors="coerce", format="mixed")
+            if dt.notna().all():
+                df[c] = dt.reindex(s.index)
                 conversions.append(f"{c}: text → date/time")
                 continue
         # Booleans stored as text.
@@ -191,6 +204,8 @@ def _tidy(p: Parsed) -> Parsed:
     p.df = df.reset_index(drop=True)
     if conversions:
         p.notes.append("Automatic type conversions: " + "; ".join(conversions) + ".")
+    if preserved:
+        p.notes.append("Kept as text to preserve leading zeros: " + ", ".join(preserved) + ".")
     return p
 
 

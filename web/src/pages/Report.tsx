@@ -31,8 +31,37 @@ function usePrefersReducedMotion() {
   return r;
 }
 
-/** One PDF page as canvas + selectable text layer. */
-function PdfPage({ doc, pageNumber, height, lazy = false }: { doc: PDFDocumentProxy; pageNumber: number; height: number; lazy?: boolean }) {
+/** Resolve a PDF link destination (named string or explicit array) to a 1-based page number. */
+export async function resolveDestPage(doc: PDFDocumentProxy, dest: unknown): Promise<number | null> {
+  try {
+    const explicit = typeof dest === 'string' ? await doc.getDestination(dest) : dest;
+    if (!Array.isArray(explicit) || explicit.length === 0) return null;
+    const ref = explicit[0];
+    if (typeof ref === 'number') return ref + 1;
+    if (ref && typeof ref === 'object') return (await doc.getPageIndex(ref as Parameters<PDFDocumentProxy['getPageIndex']>[0])) + 1;
+  } catch {
+    /* unknown destination */
+  }
+  return null;
+}
+
+interface PageLink { key: string; left: number; top: number; width: number; height: number; url?: string; dest?: unknown; target?: number | null; title: string }
+
+/** Reader-facing label for an internal link, e.g. "Go to section 3.1 (page 17)" or "Go to page 15". */
+export function linkLabel(dest: unknown, target: number | null): string {
+  if (!target) return 'Go to linked page';
+  const m = typeof dest === 'string' ? dest.match(/^(chapter|section|subsection|appendix)\.([\w.]+)$/) : null;
+  if (!m) return `Go to page ${target}`;
+  const kind = m[1] === 'subsection' ? 'section' : m[1];
+  return `Go to ${kind} ${m[2]} (page ${target})`;
+}
+
+/** One PDF page as canvas + selectable text layer + clickable link layer. */
+function PdfPage({ doc, pageNumber, height, lazy = false, onNavigate }: {
+  doc: PDFDocumentProxy; pageNumber: number; height: number; lazy?: boolean; onNavigate?: (page: number) => void;
+}) {
+  const [links, setLinks] = useState<PageLink[]>([]);
+  const [rendered, setRendered] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -72,7 +101,26 @@ function PdfPage({ doc, pageNumber, height, lazy = false }: { doc: PDFDocumentPr
       } catch {
         return;
       }
-      if (cancelled || !textRef.current) return;
+      if (cancelled) return;
+      setRendered(true);
+      // Link annotations: internal (named or explicit destination) and external URLs.
+      const annots = await page.getAnnotations({ intent: 'display' });
+      if (cancelled) return;
+      const raw = annots.filter((a: { subtype?: string; dest?: unknown; url?: string }) => a.subtype === 'Link' && (a.dest || a.url));
+      const resolved = await Promise.all(
+        raw.map(async (a: { id: string; rect: number[]; dest?: unknown; url?: string }, i: number) => {
+          const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(a.rect);
+          const target = a.url ? null : await resolveDestPage(doc, a.dest);
+          return {
+            key: `${a.id ?? i}`, left: Math.min(x1, x2), top: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1),
+            url: a.url, dest: a.dest, target,
+            title: a.url ? `Open ${a.url} in a new tab` : linkLabel(a.dest, target),
+          };
+        }),
+      );
+      if (cancelled) return;
+      setLinks(resolved.filter((l) => l.url || l.target));
+      if (!textRef.current) return;
       textRef.current.replaceChildren();
       textRef.current.style.setProperty('--scale-factor', String(scale));
       textLayer = new pdfjs.TextLayer({ textContentSource: page.streamTextContent(), container: textRef.current, viewport });
@@ -84,6 +132,11 @@ function PdfPage({ doc, pageNumber, height, lazy = false }: { doc: PDFDocumentPr
       textLayer?.cancel();
     };
   }, [doc, pageNumber, height, shouldRender]);
+
+  const follow = async (l: PageLink) => {
+    const target = l.target ?? (await resolveDestPage(doc, l.dest));
+    if (target && onNavigate) onNavigate(target);
+  };
 
   const approxW = size?.w ?? height * 0.7727; // A4-ish placeholder before render
   return (
@@ -97,6 +150,23 @@ function PdfPage({ doc, pageNumber, height, lazy = false }: { doc: PDFDocumentPr
     >
       <canvas ref={canvas} className="block" aria-hidden />
       <div ref={textRef} className="textLayer" />
+      <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
+        {links.map((l) =>
+          l.url ? (
+            <a key={l.key} href={l.url} target="_blank" rel="noreferrer" title={l.title} aria-label={l.title}
+              className="pdf-link absolute" style={{ left: l.left, top: l.top, width: l.width, height: l.height, pointerEvents: 'auto' }} />
+          ) : (
+            <button key={l.key} type="button" title={l.title} aria-label={l.title} onClick={() => follow(l)}
+              className="pdf-link absolute" style={{ left: l.left, top: l.top, width: l.width, height: l.height, pointerEvents: 'auto' }} />
+          ),
+        )}
+      </div>
+      {!rendered && (shouldRender || !lazy) && (
+        <div role="status" className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-ink-faint">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent motion-reduce:animate-none" />
+          Rendering page {pageNumber}…
+        </div>
+      )}
     </div>
   );
 }
@@ -141,7 +211,12 @@ export function ReportPage() {
     let alive = true;
     const task = pdfjs.getDocument({ url: PDF_URL });
     task.promise
-      .then((d) => alive && setDoc(d))
+      .then((d) => {
+        if (!alive) return;
+        // Clamp out-of-range deep links (e.g. ?page=51) before the first render with the document.
+        setPage((p) => Math.min(Math.max(1, p), d.numPages));
+        setDoc(d);
+      })
       .catch((e: Error) => alive && setError(e.message));
     return () => {
       alive = false; // ignore results of a load cancelled by unmount (e.g. StrictMode re-mount)
@@ -276,9 +351,9 @@ export function ReportPage() {
             </select>
           </label>
           <span className="mx-1 hidden h-6 w-px bg-paper-line sm:block" />
-          <button type="button" className="btn-secondary" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))} aria-label="Zoom out"><ZoomOut className="h-4 w-4" /></button>
+          <button type="button" className="btn-secondary" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))} disabled={zoom <= 0.5} aria-label="Zoom out" title={zoom <= 0.5 ? 'Minimum zoom (50%)' : 'Zoom out'}><ZoomOut className="h-4 w-4" /></button>
           <span className="w-12 text-center text-sm tabular-nums" aria-live="polite">{Math.round(zoom * 100)}%</span>
-          <button type="button" className="btn-secondary" onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))} aria-label="Zoom in"><ZoomIn className="h-4 w-4" /></button>
+          <button type="button" className="btn-secondary" onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))} disabled={zoom >= 3} aria-label="Zoom in" title={zoom >= 3 ? 'Maximum zoom (300%)' : 'Zoom in'}><ZoomIn className="h-4 w-4" /></button>
           <button type="button" className="btn-secondary" onClick={toggleFullscreen} aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
             {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
@@ -311,7 +386,7 @@ export function ReportPage() {
                   return (
                     <>
                       {cover && <div style={{ width: pageH * 0.7727 }} aria-hidden />}
-                      {shown.map((n) => <PdfPage key={`${n}-${pageH}`} doc={doc} pageNumber={n} height={pageH} />)}
+                      {shown.map((n) => <PdfPage key={`${n}-${pageH}`} doc={doc} pageNumber={n} height={pageH} onNavigate={goTo} />)}
                       {shown.length === 1 && !cover && <div style={{ width: pageH * 0.7727 }} aria-hidden />}
                     </>
                   );
@@ -342,7 +417,7 @@ export function ReportPage() {
           </div>
         ) : (
           <div ref={(el) => { scrollBox.current = el; stage.current = el; }} className="flex-1 overflow-auto bg-[#e9e6df]">
-            <ScrollPages doc={doc} pages={pages} width={zoom} onVisible={onVisible} initialPage={page} onInitialScroll={() => { suppressVisible.current = Date.now() + 1500; }} />
+            <ScrollPages doc={doc} pages={pages} width={zoom} onVisible={onVisible} onNavigate={goTo} initialPage={page} onInitialScroll={() => { suppressVisible.current = Date.now() + 1500; }} />
           </div>
         )}
       </div>
@@ -362,7 +437,7 @@ function scrollWithin(box: HTMLElement | null, n: number) {
   box.scrollTop += el.getBoundingClientRect().top - box.getBoundingClientRect().top - 8;
 }
 
-function ScrollPages({ doc, pages, width, onVisible, initialPage, onInitialScroll }: { doc: PDFDocumentProxy; pages: number[]; width: number; onVisible: (n: number) => void; initialPage: number; onInitialScroll: () => void }) {
+function ScrollPages({ doc, pages, width, onVisible, onNavigate, initialPage, onInitialScroll }: { doc: PDFDocumentProxy; pages: number[]; width: number; onVisible: (n: number) => void; onNavigate: (n: number) => void; initialPage: number; onInitialScroll: () => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState<number | null>(null);
   const didInitial = useRef(false);
@@ -404,7 +479,7 @@ function ScrollPages({ doc, pages, width, onVisible, initialPage, onInitialScrol
   }, [w]);
   return (
     <div ref={box} className="flex flex-col items-center gap-4 p-3">
-      {pages.map((n) => <PdfPage key={`${n}-${Math.round(h)}`} doc={doc} pageNumber={n} height={h} lazy />)}
+      {pages.map((n) => <PdfPage key={`${n}-${Math.round(h)}`} doc={doc} pageNumber={n} height={h} lazy onNavigate={onNavigate} />)}
     </div>
   );
 }

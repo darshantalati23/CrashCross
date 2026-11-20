@@ -33,9 +33,11 @@ Read this before changing anything. Then read `docs/HANDOFF.md` (state) and `doc
 ## Where things are
 
 - Figure/table components: `web/src/research/figures.tsx` (ch. 2–3), `figures2.tsx` (ch. 4–5 + maps,
-  diagnostics), `tables.tsx` (report tables), `supplementary.tsx` (catalogue index).
+  diagnostics), `tables.tsx` (report tables).
 - Chapter text: `web/src/content/chapters1to3.tsx`, `chapters4to6.tsx`, `appendices.tsx`.
-- Shared UI: `web/src/components/` (`FigureFrame` = caption, badges, data/provenance/compare disclosures).
+- Shared UI: `web/src/components/` (`FigureFrame` = caption, published/exploring badge, controls, notes; the
+  per-figure data/provenance/compare panels were removed on request — do not re-add them; `ReportFigureCrop`
+  renders a figure region from the public PDF).
 - Report reader: `web/src/pages/Report.tsx` (pdf.js; book + scroll modes).
 - EDAgent UI: `web/src/edagent/`; API: `api/app/` (`main.py` routes, `ingest.py`, `profile.py`,
   `charts.py`, `operations.py`, `chat.py`, `report.py`, `sessions.py`).

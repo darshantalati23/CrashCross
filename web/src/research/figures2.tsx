@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { FigureFrame, REPORT_PAGE_IMAGES } from '../components/FigureFrame';
 import { Plot, PALETTE } from '../components/Plot';
 import { Badge, DataTable, Segmented } from '../components/ui';
+import { ReportFigureCrop, type Region } from '../components/ReportFigureCrop';
 import { DATA_BASE, Row, fmtFixed, fmtInt, useCsvs, useJson } from '../lib/data';
 import { Loading } from './figures';
 
@@ -15,27 +16,37 @@ const col = (rows: Row[], k: string) => rows.map((r) => r[k]);
 // ---------------------------------------------------------------------------------
 
 /** A report figure that cannot be reconstructed from publishable data: show the report page. */
+/** Figure regions on the public report pages, as fractions [left, top, right, bottom]. */
+const FIGURE_REGIONS: Record<number, Region> = {
+  26: [0.13, 0.458, 0.87, 0.862], // Figure 4.1
+  27: [0.085, 0.19, 0.915, 0.364], // Figure 4.2
+};
+
+/** A report figure that cannot be rebuilt from publishable data: shows the published figure itself. */
 export function ReferenceImageFigure({
   label, caption, page, reason,
 }: { label: string; caption: string; page: number; itemId?: string; reason: string }) {
   const anchor = label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const region = FIGURE_REGIONS[page];
   return (
-    <figure id={anchor} className="my-8 scroll-mt-24 rounded-lg border border-paper-line bg-paper-card shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-paper-line px-4 py-3">
-        <figcaption className="max-w-3xl text-[0.95rem] leading-snug text-ink">
-          <span className="font-semibold">{label}:</span> {caption}
+    <figure id={anchor} aria-labelledby={`${anchor}-caption`} className="my-8 scroll-mt-28 overflow-hidden rounded-lg border border-paper-line bg-paper-card shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-paper-line px-4 py-3 sm:px-5">
+        <figcaption id={`${anchor}-caption`} className="max-w-3xl text-[0.95rem] leading-snug text-ink">
+          <span className="font-semibold">{label}.</span> {caption}
         </figcaption>
-        <Badge tone="neutral">Static report image — not interactive</Badge>
+        <Badge tone="neutral">Image from the report — not interactive</Badge>
       </div>
-      <div className="px-4 py-3">
-        {REPORT_PAGE_IMAGES.has(page) && (
+      <div className="px-3 py-4 sm:px-5">
+        {region ? (
+          <ReportFigureCrop page={page} region={region} label={label} alt={`${label} as published in the report: ${caption}`} />
+        ) : REPORT_PAGE_IMAGES.has(page) && (
           <img src={`${DATA_BASE}/reference_figures/report_page_${page}.png`} loading="lazy"
-            alt={`Report PDF page ${page} showing ${label} as published: ${caption}`}
+            alt={`Report page ${page} showing ${label} as published: ${caption}`}
             className="mx-auto max-h-[85vh] rounded border border-paper-line" />
         )}
-        <p className="mt-3 text-sm text-ink-soft">
-          <strong>Why an image:</strong> {reason}{' '}
-          <Link className="link" to={`/report?page=${page}`}>View page {page} in the report viewer</Link>.
+        <p className="mt-4 text-sm leading-relaxed text-ink-soft">
+          <strong className="text-ink">Why an image:</strong> {reason}{' '}
+          <Link className="link" to={`/report?page=${page}`}>See it on page {page} of the report</Link>.
         </p>
       </div>
     </figure>
@@ -93,8 +104,8 @@ export function RoundedGridMap() {
       label="Supplementary map"
       caption={`Historical concentration of located crash reports on a ${dec}-decimal rounded coordinate grid, 2004–2024. Counts are not exposure-adjusted and a grid cell is not a road site.`}
       itemId="supplementary_rounded_grid"
-      exploring={scale !== 'linear'}
-      onReset={() => setScale('linear')}
+      exploring={scale !== 'linear' || dec !== '2'}
+      onReset={() => { setScale('linear'); setDec('2'); setPicked(null); }}
       controls={
         <>
           <Segmented label="Grid resolution" value={dec} onChange={(v) => { setDec(v); setPicked(null); }}
@@ -114,17 +125,17 @@ export function RoundedGridMap() {
             This is <strong>not</strong> Figure 4.1 or 4.2 (those are hexbin maps shown above as report images). It renders the exported
             pandas round-to-{dec}-decimal grid summaries that support the report’s statement that the highest-count cell holds
             2,409 records at the coarse resolution and 472 at the finer one. Empty cells mean no located record was rounded there, not
-            zero risk. Drag to pan, scroll or use the toolbar to zoom, click a cell for its values.
+            zero risk. Drag to pan, scroll to zoom, double-click to reset the zoom, and click a cell for its values.
           </p>
           {heat && (
             <p className="mt-2">
               Grid summary: <strong>{fmtInt(heat.cells)}</strong> occupied cells; <strong>{fmtInt(heat.total)}</strong> located records;
-              highest-count cell <strong>{fmtInt(heat.max)}</strong> records at {heat.maxAt[0]}°N, {heat.maxAt[1]}°.
+              highest-count cell <strong>{fmtInt(heat.max)}</strong> records at {heat.maxAt[0].toFixed(Number(dec))}° N, {Math.abs(heat.maxAt[1]).toFixed(Number(dec))}° W.
             </p>
           )}
           {picked && (
             <p className="mt-2 rounded bg-accent-soft px-3 py-2">
-              Selected cell {picked.lat}°N, {picked.lon}°: <strong>{fmtInt(picked.n)}</strong> crash records over {picked.y} observed years.
+              Selected cell {picked.lat.toFixed(Number(dec))}° N, {Math.abs(picked.lon).toFixed(Number(dec))}° W: <strong>{fmtInt(picked.n)}</strong> crash records over {picked.y} observed years.
             </p>
           )}
         </>
@@ -264,7 +275,7 @@ export function Table5_1() {
           { key: 'brier_score_uncalibrated', label: 'Brier score', align: 'right', format: (v) => fmtFixed(v, 4) },
         ]} footnote={<>
           †At the illustrative fixed 0.50 threshold. Class weighting means this threshold has not been established as a decision threshold. Brier scores are uncalibrated and should not be interpreted as calibrated individual probabilities.
-          <br />*Documented export difference: the report prints the baseline AP as 0.0445; the exact test prevalence is 0.044445246777629344, which rounds to 0.0444 at four decimals. The report’s printed value is shown.
+          <br />*Rounding note: the report prints the baseline as 0.0445. The exact test prevalence is 0.04444… (1,231 of 27,697), which rounds to 0.0444; the report’s printed value is shown.
         </>} />
       )}
     </FigureFrame>
@@ -424,8 +435,8 @@ export function CurvesFigure() {
               : { type: 'scatter', mode: 'lines', name: 'Chance', x: [0, 1], y: [0, 1], line: { dash: 'dash', color: '#777', width: 1 }, hoverinfo: 'skip' },
           ]}
           layout={{
-            xaxis: { title: { text: kind === 'pr' ? 'Recall' : 'False positive rate' }, range: [0, 1] },
-            yaxis: { title: { text: kind === 'pr' ? 'Precision' : 'True positive rate' }, range: [0, kind === 'pr' ? 0.6 : 1] },
+            xaxis: { type: 'linear', title: { text: kind === 'pr' ? 'Recall' : 'False positive rate' }, range: [0, 1] },
+            yaxis: { type: 'linear', title: { text: kind === 'pr' ? 'Precision' : 'True positive rate' }, range: [0, kind === 'pr' ? 0.6 : 1] },
             legend: { orientation: 'h', y: -0.2 }, margin: { b: 100 },
           }}
         />
@@ -465,7 +476,7 @@ export function UncertaintyFigure() {
             customdata: rows.map((r) => [r.ap_2_5_percentile, r.ap_97_5_percentile]),
             hovertemplate: '<b>%{y}</b><br>AP %{x:.4f}<br>95% block interval %{customdata[0]:.4f}–%{customdata[1]:.4f}<extra></extra>',
           }]}
-          layout={{ margin: { l: 230 }, xaxis: { title: { text: 'Average precision' } } }}
+          layout={{ margin: { l: 230 }, xaxis: { type: 'linear', title: { text: 'Average precision' }, tickformat: '.3f' }, yaxis: { type: 'category' } }}
         />
       )}
     </FigureFrame>
@@ -504,7 +515,7 @@ export function CalibrationFigure() {
               hovertemplate: 'Mean predicted %{x:.4f}<br>Observed %{y:.4f}<br>%{customdata[1]:,} events in %{customdata[0]:,} records<extra></extra>' },
             { type: 'scatter', mode: 'lines', name: 'Perfect calibration', x: [0, 0.15], y: [0, 0.15], line: { dash: 'dash', color: '#777' }, hoverinfo: 'skip' },
           ]}
-          layout={{ xaxis: { title: { text: 'Mean predicted probability' } }, yaxis: { title: { text: 'Observed serious/fatal rate' } }, legend: { orientation: 'h', y: -0.2 } }}
+          layout={{ xaxis: { type: 'linear', title: { text: 'Mean predicted probability' }, tickformat: '.2f' }, yaxis: { type: 'linear', title: { text: 'Observed serious/fatal rate' }, tickformat: '.2f' }, legend: { orientation: 'h', y: -0.2 } }}
         />
       )}
     </FigureFrame>
@@ -531,7 +542,7 @@ export function PermutationFigure() {
             error_x: { type: 'data', array: col(d, 'std_average_precision_drop') as number[] },
             hovertemplate: '<b>%{y}</b><br>Mean AP drop %{x:.4f}<extra></extra>',
           }]}
-          layout={{ margin: { l: 170 }, xaxis: { title: { text: 'Mean drop in average precision (± SD over repeats)' } } }}
+          layout={{ margin: { l: 170 }, xaxis: { type: 'linear', title: { text: 'Mean drop in average precision (± SD over repeats)' }, tickformat: '.3f' }, yaxis: { type: 'category' } }}
         />
       )}
     </FigureFrame>

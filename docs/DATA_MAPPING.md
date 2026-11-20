@@ -24,6 +24,10 @@ Display derivatives (in `web/public/data/derived/`, clearly labelled in the UI):
 `rounded_grid_{2,3}.json` (columnar copies of the rounded-grid CSVs), `catalogue_items.json`
 (subset of catalogue fields per item).
 
+> **2026-11-20:** per-figure download links and the Resources download list were removed from the UI on
+> request. The bundle and its publication policy are unchanged (files remain at their `/data/...` URLs).
+> Figures 4.1/4.2 are rendered as crops of the public report PDF (no new files).
+
 ## Report items
 
 | Report item | Page (PDF) | Site location / component | Exported data used | Rendering |

@@ -273,3 +273,55 @@ def test_memory_budget_evicts_and_rejects(monkeypatch):
     assert store.get(a.id) is None  # oldest evicted to stay within budget
     with pytest.raises(MemoryError):
         store.create(filename="c", file_format="CSV", df=pd.DataFrame({"x": range(300_000)}), overview={}, details={}, notes=[])
+
+
+# ---------------- regression tests for the QA findings (2026-11-20) ----------------
+
+def test_html_report_escapes_chart_json_and_zip_copy():
+    data = b"label,val\n<script>alert(1)</script>,1\n</script><img src=x onerror=alert(2)>,2\nok,3\n"
+    sid = upload("inj.csv", data).json()["session_id"]
+    assert client.post(f"/api/sessions/{sid}/charts", json={"chart_type": "bar", "x": "label"}).status_code == 200
+    html = client.get(f"/api/sessions/{sid}/export/report.html").text
+    zipped = zipfile.ZipFile(io.BytesIO(client.get(f"/api/sessions/{sid}/export/bundle.zip").content)).read("report.html").decode()
+    for doc in (html, zipped):
+        assert "<script>alert(1)" not in doc and "<img src=x" not in doc
+        # Exactly the expected script elements: Plotly CDN, one per figure, the renderer.
+        assert doc.count("<script") == 3
+        assert r"\u003cscript\u003ealert(1)" in doc  # escaped JSON text, decoded by the JS parser
+
+
+def test_leading_zeros_preserved_and_noted():
+    b = upload("z.csv", b"zip,phone,amount\n01234,0123456789,10\n00501,0987654321,20\n15213,4125551234,30\n").json()
+    kinds = {c["name"]: c for c in b["overview"]["column_info"]}
+    assert kinds["zip"]["kind"] != "numeric" and kinds["zip"]["sample"][:2] == ["01234", "00501"]
+    assert kinds["amount"]["kind"] == "numeric"
+    assert any("leading zeros" in n and "zip" in n for n in b["notes"])
+    rows = client.get(f"/api/sessions/{b['session_id']}/rows").json()["rows"]
+    assert rows[0]["zip"] == "01234"
+
+
+def test_partially_numeric_text_is_not_silently_coerced():
+    body = "code\n" + "\n".join(str(i) for i in range(60)) + "\nN/A-7\n"
+    b = upload("p.csv", body.encode()).json()
+    col = b["overview"]["column_info"][0]
+    assert col["missing"] == 0 and col["kind"] != "numeric"
+
+
+def test_identifier_detection_vs_measurements():
+    rows = ["record_id,score,count,group_code,uid"]
+    for i in range(22):
+        rid = 1000 + (i if i < 20 else i - 20)  # 20 unique of 22 (duplicates present)
+        rows.append(f"{rid},{(i % 20) + 1}.0,{i % 5},{(i % 3) + 1},u{i:03d}")
+    kinds = {c["name"]: c["kind"] for c in upload("ids.csv", "\n".join(rows).encode()).json()["overview"]["column_info"]}
+    assert kinds["record_id"] == "identifier"
+    assert kinds["uid"] == "identifier"
+    assert kinds["score"] == "numeric" and kinds["count"] == "numeric"
+    assert kinds["group_code"] == "categorical"
+
+
+def test_bins_and_top_n_zero_rejected_and_heatmap_default_columns():
+    sid = upload().json()["session_id"]
+    assert client.post(f"/api/sessions/{sid}/charts", json={"chart_type": "histogram", "x": "units", "bins": 0}).status_code == 422
+    assert client.post(f"/api/sessions/{sid}/charts", json={"chart_type": "bar", "x": "region", "top_n": 0}).status_code == 422
+    r = client.post(f"/api/sessions/{sid}/charts", json={"chart_type": "heatmap"})
+    assert r.status_code == 200 and set(r.json()["figure"]["data"][0]["x"]) >= {"units", "price"}

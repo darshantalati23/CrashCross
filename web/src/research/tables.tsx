@@ -82,7 +82,7 @@ export function TableA_2() {
         { key: 'flagged_records', label: 'Mismatches', align: 'right', format: fmtInt },
         { key: 'flag_percent_of_eligible', label: 'Mismatches %', align: 'right', format: pct(2) },
       ]}
-      footnote="Documented export difference: the report’s prose describes total injuries vs fatal + major + moderate + minor. The counts in this table actually come from the v6 comparison INJURY_COUNT vs MAJ + MOD + MIN + UNK; the computation is preserved as run. The component comparison is unavailable after 2018 — those years are not zero discrepancies."
+      footnote="Note: the paragraph above describes total injuries compared with fatal + major + moderate + minor injuries. The counts in this table actually compare the total injury count with major + moderate + minor + unknown-severity injuries; they are shown as computed. The component comparison is unavailable after 2018 — those years are not zero discrepancies."
       extra={
         <div className="mt-3">
           <Disclosure summary="All exported logical and reconciliation checks (all years)">
@@ -127,7 +127,7 @@ export function TableD_1() {
             { type: 'bar', name: 'Known outcome', x: d.map((r) => r.CRASH_YEAR as number), y: d.map((r) => r.known_severity_records as number), marker: { color: '#4c72b0' }, hovertemplate: '%{x}: %{y:,} known-outcome<extra></extra>' },
             { type: 'scatter', mode: 'lines+markers', name: 'Known %', yaxis: 'y2', x: d.map((r) => r.CRASH_YEAR as number), y: d.map((r) => r.known_severity_percent as number), line: { color: '#c0692b' }, hovertemplate: '%{x}: %{y:.2f}% known<extra></extra>' },
           ]}
-          layout={{ barmode: 'overlay', yaxis: { title: { text: 'Records' } }, yaxis2: { title: { text: 'Known %' }, overlaying: 'y', side: 'right', range: [70, 90] }, xaxis: { dtick: 2 } }} />
+          layout={{ barmode: 'overlay', margin: { r: 72 }, yaxis: { type: 'linear', title: { text: 'Records' } }, yaxis2: { type: 'linear', title: { text: 'Known %', standoff: 12 }, overlaying: 'y', side: 'right', range: [70, 90], automargin: true }, xaxis: { type: 'linear', dtick: 2 }, legend: { orientation: 'h', y: -0.18 } }} />
       )}
     </FigureFrame>
   );
@@ -211,7 +211,7 @@ export function TableG_1() {
           { key: 'available_n', label: 'Available records', align: 'right', format: fmtInt },
           { key: 'available_percent', label: 'Available %', align: 'right', format: pct(2) },
           { key: 'source_nonmissing_n', label: 'Raw non-missing (export)', align: 'right', format: fmtInt },
-        ]} footnote="Documented export difference: the report defines “available” as non-missing but prints 238,556 (the valid coordinate-pair count) for both coordinate fields; raw non-missing counts are 238,608 (DEC_LAT) and 238,600 (DEC_LONG). The printed 95.90% uses marginal source completeness, whereas 238,556 / 248,810 = 95.8788%. The report’s display values are shown; the last column is the raw count." />
+        ]} footnote="Note: “available” is defined as non-missing, but both coordinate rows show 238,556, the number of records with a valid latitude–longitude pair. The non-missing counts are 238,608 (latitude) and 238,600 (longitude), shown in the last column. The printed 95.90% follows those non-missing counts; 238,556 of 248,810 would be 95.88%. The report’s printed values are shown." />
       )}
     </FigureFrame>
   );

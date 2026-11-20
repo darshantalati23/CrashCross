@@ -1,4 +1,7 @@
-import { ReactNode, useId, useState } from 'react';
+import { createContext, ReactNode, useContext, useId, useState } from 'react';
+
+/** Accessible name for tables rendered inside a figure/table frame (set by FigureFrame). */
+export const TableNameContext = createContext<string | undefined>(undefined);
 import { ChevronDown, Info, AlertTriangle, Lightbulb } from 'lucide-react';
 import { Cell, Row, toCsv } from '../lib/data';
 
@@ -96,11 +99,13 @@ export function DataTable({
   maxHeight?: number;
   footnote?: ReactNode;
 }) {
+  const frameName = useContext(TableNameContext);
+  const name = caption ?? frameName;
   return (
     <div>
       <div className="overflow-x-auto rounded-md border border-paper-line" style={maxHeight ? { maxHeight, overflowY: 'auto' } : undefined}>
         <table className="w-full border-collapse text-sm">
-          {caption && <caption className="sr-only">{caption}</caption>}
+          {name && <caption className="sr-only">{name}</caption>}
           <thead className="sticky top-0 bg-[#f3f1ec]">
             <tr>
               {columns.map((c) => (

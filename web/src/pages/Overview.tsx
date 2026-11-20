@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, FolderOpen, BarChart3, FlaskConical, ArrowRight, ShieldAlert } from 'lucide-react';
-import { useJson } from '../lib/data';
-import { Badge, Callout } from '../components/ui';
+import { BookOpen, FolderOpen, BarChart3, FlaskConical, ArrowRight } from 'lucide-react';
+import { Callout } from '../components/ui';
 
 const STATS: { value: string; label: string; note: string }[] = [
   { value: '248,810', label: 'police-reported crashes', note: '2004–2024 · 191 source fields · no duplicate IDs' },
@@ -31,19 +30,11 @@ const FINDINGS = [
   'Maps show where reports accumulated historically — not high-risk sites. Site-frequency, Empirical Bayes and countermeasure analyses were not run because their reviewed inputs were absent.',
 ];
 
-interface SiteManifest {
-  run_id: string;
-  status: string;
-  completed_utc: string;
-  documented_report_differences: { check_id: string; reason: string }[];
-  published_files: unknown[];
-}
 
 export function Overview() {
-  const m = useJson<SiteManifest>('site_manifest.json');
   return (
     <div>
-      <section className="border-b border-paper-line bg-gradient-to-b from-white to-paper">
+      <section className="border-b border-paper-line bg-white">
         <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
           <p className="text-sm font-semibold uppercase tracking-wide text-accent">IT 462 Exploratory Data Analysis · Group B8 · Autumn 2026</p>
           <h1 className="mt-2 max-w-4xl font-serif text-3xl font-semibold leading-tight text-ink sm:text-5xl">
@@ -117,7 +108,7 @@ export function Overview() {
               <p className="font-serif text-xl font-semibold group-hover:text-accent-dark">Appendices A–G</p>
               <p className="mt-2 text-sm text-ink-soft">
                 Variable notes, metric definitions, software, the annual ledger, full category tables with denominators, model review queues,
-                the completeness and geographic audit, and an index of supplementary notebook analyses.
+                and the completeness and geographic audit.
               </p>
             </Link>
           </div>
@@ -148,31 +139,6 @@ export function Overview() {
               and an exportable report. <Link className="link" to="/edagent">Open EDAgent</Link>.
             </p>
           </div>
-        </section>
-
-        <section aria-labelledby="provenance" className="card p-5">
-          <h2 id="provenance" className="flex items-center gap-2 font-semibold">
-            <ShieldAlert aria-hidden className="h-5 w-5 text-accent" /> Data provenance
-          </h2>
-          {m.data ? (
-            <div className="mt-2 space-y-2 text-sm text-ink-soft">
-              <p>
-                Figures and tables use export run <code>{m.data.run_id}</code> (status <Badge tone="ok">{m.data.status}</Badge>, completed{' '}
-                {m.data.completed_utc.slice(0, 10)}), {m.data.published_files.length} published files. Nothing on the research pages re-runs the
-                notebook or the models.
-              </p>
-              <p>The export verification documents {m.data.documented_report_differences.length} differences between the report’s wording or rounding and the computed results; they are flagged where they occur:</p>
-              <ul className="list-disc space-y-1 pl-5">
-                {m.data.documented_report_differences.map((d) => <li key={d.check_id}>{d.reason}</li>)}
-              </ul>
-              <p>
-                Website verification additionally found two confidence-limit roundings in the report prose (§3.7): pedestrian upper limit 12.0946
-                (printed 12.10) and rear-end lower limit 0.3949 (printed 0.40). Interactive views show the exported values.
-              </p>
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-ink-faint">Loading provenance…</p>
-          )}
         </section>
       </div>
     </div>

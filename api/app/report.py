@@ -15,6 +15,17 @@ from .util import clean
 PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 
 
+def json_for_script(obj) -> str:
+    """JSON that is safe inside an HTML <script> element: no '</script>', '<!--', '&' or line separators."""
+    out = json.dumps(obj, default=str)
+    return "".join(_SCRIPT_ESCAPES.get(ch, ch) for ch in out)
+
+
+# Characters replaced by their JSON unicode escapes (backslash + u + 4 hex digits); JSON.parse and
+# JavaScript object literals decode them back to the original text.
+_SCRIPT_ESCAPES = {ch: chr(92) + f"u{ord(ch):04x}" for ch in ("<", ">", "&", chr(0x2028), chr(0x2029))}
+
+
 def _esc(v) -> str:
     return html.escape("" if v is None else str(v))
 
@@ -68,7 +79,7 @@ def html_report(s: Session) -> str:
             label = "AI explanation (numbers verified against the result)" if r.get("explanation_source") == "ai" else "Summary (generated from computed values)"
             parts.append(f"<p class='expl'><span class='tag'>{label}</span> {_esc(r['explanation'])}</p>")
         if res.get("figure"):
-            parts.append(f"<div class='fig' id='fig{i}'></div><script>window.__figs=window.__figs||[];window.__figs.push(['fig{i}',{json.dumps(res['figure'])}]);</script>")
+            parts.append(f"<div class='fig' id='fig{i}'></div><script>window.__figs=window.__figs||[];window.__figs.push(['fig{i}',{json_for_script(res['figure'])}]);</script>")
         for n in res.get("notes") or []:
             parts.append(f"<p class='muted'>{_esc(n)}</p>")
         if res.get("facts"):

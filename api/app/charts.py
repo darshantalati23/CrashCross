@@ -93,7 +93,7 @@ def build_chart(df: pd.DataFrame, spec: dict[str, Any]) -> dict:
 
     if ct == "histogram":
         _need(df, x, {"numeric"}, "X", "histogram")
-        bins = int(spec.get("bins") or 30)
+        bins = 30 if spec.get("bins") is None else int(spec["bins"])
         if not 5 <= bins <= 100:
             raise ChartError("Bins must be between 5 and 100.")
         levels = _color_levels(df, color)
@@ -163,7 +163,7 @@ def build_chart(df: pd.DataFrame, spec: dict[str, Any]) -> dict:
         res = (g.count() if agg == "count" else getattr(g, agg)()).rename("value").reset_index()
         res.columns = (["x"] + (["group"] if levels else []) + ["value"])
         if ct == "bar":
-            top_n = int(spec.get("top_n") or 20)
+            top_n = 20 if spec.get("top_n") is None else int(spec["top_n"])
             if not 1 <= top_n <= 100:
                 raise ChartError("Top N must be between 1 and 100.")
             order = res.groupby("x")["value"].sum().sort_values(ascending=False)
@@ -252,7 +252,9 @@ def build_chart(df: pd.DataFrame, spec: dict[str, Any]) -> dict:
         table_cols = ["group", "n", "min", "q1", "median", "q3", "max", "mean", "outliers_1_5_iqr"]
 
     else:  # heatmap
-        cols = spec.get("columns") or []
+        cols = spec.get("columns") or [c for c in df.columns if _kind(df, c) == "numeric"][:15]
+        if not spec.get("columns"):
+            notes.append("No columns were chosen, so all numeric columns (up to 15) are used.")
         bad = [c for c in cols if _kind(df, c) != "numeric"]
         if bad:
             raise ChartError(f"Correlation heatmaps need numeric columns; not numeric: {', '.join(bad)}.")
