@@ -1,10 +1,18 @@
-# Handoff — current state (2026-11-20, after QA fixes)
+# Handoff — current state (2026-11-20, Vercel build fix)
 
 ## State
 
-Working website and EDAgent API, committed on `main` of `ExploratoryDataAnalysis/CrashCross`.
+Latest fix (milestone 7): removed the unused supplementary index module that still imported the
+deleted `useCatalogue` hook and blocked Vercel's TypeScript build. No active UI or data changed.
+Validation and push status are recorded in `docs/PROGRESS.md`.
+
+Current checkout: `C:\Darshan\CrashCross`, on `main` of `darshantalati23/CrashCross`.
 Everything in `docs/FEATURES.md` marked ✅ is implemented and was verified (see `docs/VALIDATION.md`).
-Deployment-ready for Vercel Hobby + Render Free (see `docs/DEPLOYMENT.md`, checked 2026-11-20); not deployed. Deploy from a **personal** GitHub repository (URL not yet provided). AI chat is disabled in the initial deployment (no key in `render.yaml`).
+The reported Vercel deployment failed during TypeScript compilation; milestone 7 fixes that failure.
+Live deployment status has not been verified. AI chat is disabled in the initial deployment (no key in `render.yaml`).
+
+The D-drive sync/deployment notes below describe the earlier milestone 6 handoff; the current
+personal-repository checkout above supersedes its source-location and missing-repository notes.
 
 ## How to resume
 

@@ -2,6 +2,16 @@
 
 Newest first. Keep short; details live in HANDOFF / VALIDATION.
 
+## 2026-11-20 — Milestone 7: Vercel TypeScript build fix
+- Removed unused `web/src/research/supplementary.tsx`, left behind after the supplementary index
+  was removed from Appendices. It still imported the deleted `useCatalogue` hook, causing TS2305
+  and cascading TS18046 errors because TypeScript checks every file under `src`.
+- No active UI, report text, public data or API behavior changed.
+- Validation: 763 data/UI checks, 30 API tests and `web/npm run build` all pass. API tests required
+  running outside the sandbox because its socket restrictions stalled asyncio initialization.
+- Delivery: committing this fix on personal-repository `main` for the requested push to
+  `origin/main` (`darshantalati23/CrashCross`); live Vercel deployment remains unverified.
+
 ## 2026-11-20 — Milestone 6: QA fixes and requested removals (local commits on D:, not pushed/deployed)
 - Source: `analysis/CrashCross_QA_Evidence/` (21 findings). D-01 (CORS) already fixed upstream; not touched.
 - Removed: per-figure Data/How computed/Compare panels; Overview Data provenance; Resources public
