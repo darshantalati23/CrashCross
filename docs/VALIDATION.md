@@ -1,6 +1,33 @@
 # Validation record — 2026-11-20
 
-## QA-fix round (latest)
+## Full-table lookup round (milestone 9, latest)
+
+- Final checks passed: `python scripts/verify_site_data.py` (763 checks),
+  `api/.venv/Scripts/python -m pytest api/tests -q` (69 tests), `cd web; npm run build`,
+  and `node --test scripts/test-api-timeout.mjs` (4 regressions). API tests ran outside the sandbox
+  so local asyncio sockets worked. One existing Starlette/AnyIO deprecation warning remains.
+- Lookup regressions cover a named record outside the top 20, a match at row 200,000, case/space
+  normalization, literal substring matching, leading-zero and large numeric IDs, duplicate names,
+  missing marks, typed filters, AND/OR, sorting before pagination, zero matches vs empty pages,
+  subset statistics, rejected malformed queries, no-AI row search, deterministic chat/export output,
+  partial-table summaries, and retaining computed results when explanation quota is exhausted.
+- Supplied XLSX: loaded with the existing parser and verified the corrected full-table lookup
+  and server-written answer against its actual cell values. Read-only; private records are not in Git.
+- No live provider calls: planning is tested with fake responses; Gemini/Grok transports remain
+  covered by mocked HTTP. The user's Render key is not available to this workspace. Actual host
+  deployments and every possible natural-language interpretation are not verified by these tests.
+
+## Gemini provider/model round (milestones 7–8)
+
+- Milestone 7: Vercel's TypeScript failure reproduced locally, resolved by deleting unused
+  `supplementary.tsx`; 763 data/UI checks, 30 API tests and production build passed (`2aa147e`).
+- Multi-provider chat: provider adapters and mocked transport checks added (`9f687b6`).
+- Milestone 8: Gemini 3.1 Flash Lite default plus free-tier presets checked against Google's
+  official pricing; explicit checks bypass listing, Auto is bounded at 20 s server-side, browser
+  check/body timeout is 25 s, cancellation/stale responses covered. 763 data/UI checks, 43 API tests,
+  3 frontend regressions and production build passed (`d2853c2`).
+
+## QA-fix round (milestone 6)
 
 - `python scripts/verify_site_data.py`: 763 passed, 0 failed (adds 14 UI regression checks: explicit axis
   types, layout cloning, magma_r stops, grid-map reset, removed panels/sections, no dead repo link, PDF link

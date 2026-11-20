@@ -27,6 +27,8 @@
 | Storage | **None** (no DB, no accounts, no durable uploads) | Not required by any implemented feature; avoids personal-data retention and free-tier DB expiry |
 | Sessions | In-memory, token per upload, 60-min idle TTL, LRU cap, cleared on restart | Simple and honest for a single small instance (Render free has 512 MB RAM and an ephemeral disk) |
 | AI | Anthropic (official SDK), Gemini and Grok (REST via httpx) behind `api/app/providers.py`; server keys per provider; BYOK optional (off) | Key never reaches the browser; grounding enforced server-side |
+| Query execution | Validated filters scan the full uploaded DataFrame before calculation, sorting or pagination; exact lookups use server-written answers | Prevents top-N summaries from being mistaken for whole-dataset searches; no generated code or sandbox |
+| No-AI lookup | Existing Rows endpoint and tab accept literal column/value search, independent of AI keys | Search remains usable if provider quota is exhausted; no added database or retrieval bill |
 
 ## Frontend structure
 
@@ -44,8 +46,9 @@
 
 `main.py` routes and error shape (`{"error": {"code", "message"}}`) · `ingest.py` parsing + limits ·
 `profile.py` overview/quality · `charts.py` chart validation + server-side aggregation → Plotly figure
-+ table · `operations.py` approved analysis operations for chat · `chat.py` planner → execute →
-explain → numeric grounding check · `report.py` HTML/JSON/ZIP exports · `sessions.py` store/TTL ·
++ table · `operations.py` approved operations and full-table filters/lookups · `chat.py` planner → validated
+filter/execute (worker thread) → exact server summary for lookups/partial tables, otherwise optional AI explanation
+and numeric consistency check · `report.py` HTML/JSON/ZIP exports · `sessions.py` store/TTL ·
 `config.py` env settings · `util.py` JSON cleaning, rate limiter.
 
 ## Data flow for a research figure

@@ -145,9 +145,10 @@ export const api = {
   },
   session: (sid: string) => request<SessionPayload>(`/api/sessions/${encodeURIComponent(sid)}`),
   remove: (sid: string) => request<{ deleted: boolean }>(`/api/sessions/${encodeURIComponent(sid)}`, { method: 'DELETE' }),
-  rows: (sid: string, offset: number, limit: number) =>
-    request<{ total: number; columns: string[]; rows: Record<string, unknown>[]; offset: number }>(
-      `/api/sessions/${encodeURIComponent(sid)}/rows?offset=${offset}&limit=${limit}`,
+  rows: (sid: string, offset: number, limit: number, search?: { column: string; value: string; match: string }) =>
+    request<{ total: number; rows_searched: number; columns: string[]; rows: Record<string, unknown>[]; offset: number }>(
+      `/api/sessions/${encodeURIComponent(sid)}/rows${search ? '/search' : ''}?offset=${offset}&limit=${limit}`,
+      search ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(search) } : undefined,
     ),
   chart: (sid: string, spec: Record<string, unknown>) =>
     request<ChartResult>(`/api/sessions/${encodeURIComponent(sid)}/charts`, {

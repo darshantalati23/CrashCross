@@ -68,6 +68,23 @@ Environment variables:
 
 Afterwards open `https://<service>.onrender.com/api/health`.
 
+### Enable or change AI keys on a live deployment
+
+In Render, select the **EDAgent API service → Environment → Add Environment Variable**. Add
+`GEMINI_API_KEY` for Gemini, `XAI_API_KEY` for Grok, and/or `ANTHROPIC_API_KEY` for Anthropic.
+Keep actual key values out of Git, `render.yaml` and Vercel's frontend variables. Key configuration is
+independent of commits: deploy the provider-support code, set the key in Render, then **Save and deploy**.
+To rotate a key later, edit that variable and select **Save and deploy** again; no code commit is needed.
+The restarted backend clears in-memory upload sessions, so re-upload the dataset if necessary.
+The Rows tab's full-table search does not need an AI key and remains available without provider quota.
+
+The checked-in blueprint enables auto-deploy (`autoDeploy: true`). Confirm the actual service's linked
+branch and **Auto-Deploy: On Commit** setting in Render; pushing backend changes under `api/` triggers
+its rebuild. Vercel deploys the website separately. A local commit alone is not a deployment, and neither
+host's live deployment success is established by passing local tests. See
+[Render environment settings](https://render.com/docs/configure-environment-variables) and
+[Render deploys](https://render.com/docs/deploys).
+
 Render Free limits ([docs](https://render.com/docs/free), checked 2026-11-20): 0.1 CPU and 512 MB RAM. The
 service sleeps after 15 minutes idle and takes about a minute to wake. There are 750 instance-hours per
 month, the filesystem is ephemeral, and Render may restart the service at any time. Render says not to use

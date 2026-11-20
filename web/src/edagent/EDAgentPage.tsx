@@ -153,23 +153,46 @@ function QualityTab({ s }: { s: SessionPayload }) {
 
 function RowsTab({ s }: { s: SessionPayload }) {
   const [offset, setOffset] = useState(0);
-  const [data, setData] = useState<{ total: number; columns: string[]; rows: Record<string, unknown>[] } | null>(null);
+  const [data, setData] = useState<{ total: number; rows_searched: number; columns: string[]; rows: Record<string, unknown>[] } | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [column, setColumn] = useState(s.overview.column_info[0]?.name ?? '');
+  const [value, setValue] = useState('');
+  const [match, setMatch] = useState('eq');
+  const [search, setSearch] = useState<{ column: string; value: string; match: string } | undefined>();
   const limit = 50;
   useEffect(() => {
+    let active = true;
     setErr(null);
-    api.rows(s.session_id, offset, limit).then(setData).catch((e: ApiError) => setErr(e.message));
-  }, [s.session_id, offset]);
-  if (err) return <ErrorNote>{err}</ErrorNote>;
-  if (!data) return <Spinner />;
+    setData(null);
+    api.rows(s.session_id, offset, limit, search).then((d) => { if (active) setData(d); })
+      .catch((e: ApiError) => { if (active) setErr(e.message); });
+    return () => { active = false; };
+  }, [s.session_id, offset, search]);
   return (
     <div className="space-y-2">
+      <p className="text-sm text-ink-soft">Search every uploaded row without an AI call. Text matching ignores case and repeated spaces. Try contains for a partial name.</p>
+      <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); setOffset(0); setSearch({ column, value, match }); }}>
+        <label className="text-sm">Column<select aria-label="Search column" className="input mt-1 block" value={column} onChange={(e) => setColumn(e.target.value)}>
+          {s.overview.column_info.map((c) => <option key={c.name}>{c.name}</option>)}
+        </select></label>
+        <label className="text-sm">Match<select aria-label="Search matching" className="input mt-1 block" value={match} onChange={(e) => setMatch(e.target.value)}>
+          <option value="eq">Equals</option><option value="contains">Contains</option><option value="starts_with">Starts with</option>
+        </select></label>
+        <label className="text-sm">Value<input aria-label="Search value" className="input mt-1 block" maxLength={500} value={value} onChange={(e) => setValue(e.target.value)} /></label>
+        <button className="btn-primary" type="submit" disabled={!value.trim()}>Search all rows</button>
+        <button className="btn-secondary" type="button" onClick={() => { setOffset(0); setSearch(undefined); setValue(''); }}>Clear search</button>
+      </form>
+      {err && <ErrorNote>{err}</ErrorNote>}
+      {!err && !data && <Spinner />}
+      {data && <>
+      <p className="text-sm" role="status">Searched all {data.rows_searched.toLocaleString()} rows; {data.total.toLocaleString()} matching records. Duplicate matches are kept separate.</p>
       <div className="flex items-center gap-2 text-sm">
         <button className="btn-secondary" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))}>Previous</button>
-        <span>Rows {offset + 1}–{Math.min(offset + limit, data.total)} of {data.total.toLocaleString()}</span>
+        <span>Rows {data.total ? offset + 1 : 0}–{Math.min(offset + limit, data.total)} of {data.total.toLocaleString()}</span>
         <button className="btn-secondary" disabled={offset + limit >= data.total} onClick={() => setOffset(offset + limit)}>Next</button>
       </div>
       <DataTable rows={data.rows as Row[]} maxHeight={560} columns={data.columns.map((c) => ({ key: c, label: c, format: (v: Cell) => fmt(v) }))} />
+      </>}
     </div>
   );
 }

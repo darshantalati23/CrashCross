@@ -2,6 +2,23 @@
 
 Newest first. Keep short; details live in HANDOFF / VALIDATION.
 
+## 2026-11-20 — Milestone 9: full-table lookup and no-AI search
+- Fixed the observed lookup failure: named records now have an approved `lookup_rows` operation,
+  and the planner is told not to substitute a top-N aggregation or infer absence from examples.
+- Added typed, bounded AND/OR filters over the full upload before statistics/sorting/pagination;
+  row counts, duplicate matches and truncated outputs are explicit. Lookup/partial results use
+  exact server-written summaries. Unsupported parameters are rejected rather than ignored.
+- Rows tab now searches by column/value without a provider key or API quota. Search values use
+  a POST body, not URLs. Existing upload/session limits and publication rules are unchanged.
+- Reproduced the supplied workbook failure locally and verified the corrected lookup; the workbook
+  was unchanged and no real student records were committed. Regressions use synthetic data,
+  including a last-row match at the 200k-row limit, duplicate names, missing values and large IDs.
+- Updated EDAGENT, FEATURES, ARCHITECTURE, DEPLOYMENT, VALIDATION, README and HANDOFF to cover
+  the changes in this chat, including the Gemini presets and Render key/deployment workflow.
+- Final checks: 763 data/UI checks, 69 API tests, 4 frontend regressions and production build pass.
+  Delivery target is the personal repository's `main`; live provider planning/deployment status is
+  not independently verified here because the key and host dashboards are managed externally.
+
 ## 2026-11-20 — Milestone 8: Gemini presets and bounded model checks
 - Gemini defaults to `gemini-3.1-flash-lite`; presets also include `gemini-3.5-flash-lite` and
   `gemini-3-flash-preview`, with published free-tier pricing checked against Google's official page.
@@ -10,6 +27,7 @@ Newest first. Keep short; details live in HANDOFF / VALIDATION.
 - Fixed shared HTTP timeout cleanup: keep the timer active through response-body parsing.
 - Checks: 763 data/UI checks, 43 API tests, 3 frontend regressions and production build all pass.
 - No live provider test performed: the Render-managed key is not available in this workspace.
+- Delivered on personal-repository `main` as `d2853c2`.
 
 ## 2026-11-20 — Milestone 7: Vercel TypeScript build fix
 - Removed unused `web/src/research/supplementary.tsx`, left behind after the supplementary index
@@ -18,8 +36,8 @@ Newest first. Keep short; details live in HANDOFF / VALIDATION.
 - No active UI, report text, public data or API behavior changed.
 - Validation: 763 data/UI checks, 30 API tests and `web/npm run build` all pass. API tests required
   running outside the sandbox because its socket restrictions stalled asyncio initialization.
-- Delivery: committing this fix on personal-repository `main` for the requested push to
-  `origin/main` (`darshantalati23/CrashCross`); live Vercel deployment remains unverified.
+- Delivered on personal-repository `main` as `2aa147e` to
+  `origin/main` (`darshantalati23/CrashCross`); live Vercel deployment was not verified here.
 
 ## 2026-11-20 — Milestone 6: QA fixes and requested removals (local commits on D:, not pushed/deployed)
 - Source: `analysis/CrashCross_QA_Evidence/` (21 findings). D-01 (CORS) already fixed upstream; not touched.

@@ -125,8 +125,9 @@ export function Chat({ session, health, onResultsChange }: {
       <Callout kind="note" title="How chat answers are produced">
         <p>
           The AI only chooses one approved analysis (such as a summary, a grouped aggregate, a correlation or a chart) on <strong>your uploaded
-          dataset</strong>. The server computes every number; the AI then explains the result, and its explanation is shown only if every number
-          in it matches the computed values. It declines questions unrelated to this dataset and never runs code. Answers are labelled.
+          dataset</strong>. Lookups search all uploaded rows and return a server-written answer. Other results may have an AI explanation whose
+          numbers are checked against computed values; this check does not verify every written claim. Partial results are labelled.
+          Use the Rows tab to search without an AI call. Unsupported or ambiguous questions need clarification; no generated code is run.
         </p>
       </Callout>
 
@@ -184,7 +185,7 @@ export function Chat({ session, health, onResultsChange }: {
               <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">
                 <Bot aria-hidden className="h-4 w-4" />
                 {m.type === 'answer' && (m.explanation_source === 'ai'
-                  ? <Badge tone="ok"><ShieldCheck aria-hidden className="mr-1 h-3 w-3" />AI explanation · numbers verified</Badge>
+                  ? <Badge tone="ok"><ShieldCheck aria-hidden className="mr-1 h-3 w-3" />AI explanation · numbers checked</Badge>
                   : <Badge tone="neutral">Summary from computed values</Badge>)}
                 {m.type === 'clarify' && <Badge tone="accent">Needs clarification</Badge>}
                 {m.type === 'decline' && <Badge tone="warn">Not answered</Badge>}

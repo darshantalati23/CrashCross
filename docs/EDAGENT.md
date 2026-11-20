@@ -12,13 +12,16 @@ never loads the export or the crash CSV.
 | Overview & quality | Rows, columns, duplicates, complete rows, missing cells, per-column stats/top values; warnings for duplicates, missingness > 20%/50%, constant columns, likely identifiers, mixed types, high cardinality, IQR outliers. |
 | Visualise | Bar, histogram, line, scatter, box, correlation heatmap. Column pickers show unusable columns disabled with the reason; defaults chosen per chart type; invalid combinations rejected client-side and server-side with a clear message. Aggregation over all rows on the server; scatter sampled to 5,000 points with a note; box plots from computed quartiles; top-N without silent pooling. Each chart keeps its exact table. |
 | Chat (optional) | See below. Disabled with an explanation when no key is configured. |
+| Full-table search | Rows tab: select a column, Equals/Contains/Starts with and a value. Searches the complete upload before pagination, with case/space normalization; no AI key or AI quota required. Duplicate matches stay separate. |
 | Export | `report.html` (overview, columns, quality, every chart + table, chat answers with AI text labelled), `results.json`, `bundle.zip` (report, JSON, column profile, every result table as CSV with formula-injection guard). Generated from the session's actual results. |
 | States | Server waking/unreachable (retry), loading, empty, validation errors, rate limits, expired/unknown session (re-upload prompt), delete session. |
 
 ## API
 
 `GET /api/health` · `POST /api/sessions` (multipart `file`, optional `sheet`) · `GET|DELETE /api/sessions/{id}` ·
-`GET /api/sessions/{id}/rows?offset&limit` · `POST /api/sessions/{id}/charts` · `DELETE /api/sessions/{id}/results/{rid}` ·
+`GET /api/sessions/{id}/rows?offset&limit` ·
+`POST /api/sessions/{id}/rows/search?offset&limit` (JSON: `{column,value,match?}`, `match=eq|contains|starts_with`; search values stay out of URL logs) ·
+`POST /api/sessions/{id}/charts` · `DELETE /api/sessions/{id}/results/{rid}` ·
 `POST /api/sessions/{id}/chat` · `GET /api/sessions/{id}/export/{report.html|results.json|bundle.zip}`.
 OpenAPI docs at `/api/docs`. Errors: `{"error": {"code", "message"}}`.
 
@@ -27,14 +30,47 @@ OpenAPI docs at `/api/docs`. Errors: `{"error": {"code", "message"}}`.
 1. **Plan** — the model receives column names, kinds, missing %, distinct counts and up to five example
    values per column (wrapped as data), the last four question/plan pairs, and the list of approved
    operations. It must return JSON: a plan (one operation + parameters), a clarification with options,
-   or a decline (unrelated, unanswerable or missing data).
+   or a decline (unrelated, unanswerable or missing data). All uploaded column names are included;
+   the example values are explicitly not an exhaustive list. Named-record questions must use `lookup_rows`.
 2. **Execute** — `operations.py` runs the approved operation (`overview`, `describe_column`,
-   `value_counts`, `group_aggregate`, `correlation`, `missingness`, `crosstab`, `chart`) with validated
-   columns. Unknown operations or columns are declined. No model output is ever executed as code.
-3. **Explain** — the model gets the computed result (≤ 25 table rows) and writes 2–4 sentences.
+   `lookup_rows`, `value_counts`, `group_aggregate`, `correlation`, `missingness`, `crosstab`, `chart`) with validated
+   columns and parameters. Up to 10 filters are applied to the **whole uploaded table before** sorting, statistics,
+   aggregation or pagination. Unknown operations/parameters/columns are declined; no generated code/SQL runs.
+   CPU work runs outside the async event loop. Each result records rows searched/matched, results returned/total,
+   whether the scan completed and whether output is truncated. Lookup output is capped at 100 records per page.
+3. **Explain** — lookups receive an exact server-written answer, without an explanation API call. Multiple matches
+   are shown separately with identifying fields; zero matches means these filters found nothing in the full upload,
+   not that spelling variants were exhaustively resolved. Partial/oversized result tables also use server summaries,
+   explicitly warning that absence from a partial table does not establish absence from the dataset.
+   Other complete, compact results (≤ 25 table rows, ≤ 12,000 characters) can receive a 2–4 sentence AI explanation.
 4. **Ground** — every number in the explanation must match a number in the result or the question
    (allowing display rounding / ×100 for percentages). Otherwise the explanation is replaced by a
-   deterministic summary and the offending numbers are shown as withheld.
+   deterministic summary and the offending numbers are shown as withheld. Explanation-provider failures also retain
+   the computed result with a server summary. The UI says "numbers checked": numerical consistency does not prove
+   every semantic claim. Natural-language planning still requires a provider call; use Rows search if quota is exhausted.
+
+### Query scope and limits
+
+All operations accept `filters: [{column, op, value}]` and `filter_mode: "all"|"any"` (AND/OR).
+Approved comparisons: `eq`, `ne`, `in` (up to 100 values), `contains`, `starts_with`, `gt`, `gte`, `lt`, `lte`,
+`is_null`, `not_null`. Missing values match only explicit null filters. Text equality ignores case, Unicode width
+differences and repeated spaces; contains/starts_with are literal, not regular expressions. Ordered comparisons
+require numbers or dates; large integer identifiers remain exact during filtering and leading-zero text stays text.
+
+For example, a synthetic lookup plan is:
+
+```json
+{"type":"plan","operation":"lookup_rows","params":{"filters":[{"column":"Student Name","op":"eq","value":"Example Student"}],"columns":["Roll No","Total Marks"],"limit":50,"offset":0}}
+```
+
+`lookup_rows` also accepts `sort_by` and `sort_desc` for sorted/ranked row lists. The other approved operations accept
+the same filters for subset calculations. This is a bounded filter → calculate/sort → page pipeline, not an arbitrary
+multi-step agent. Unsupported calculations should request clarification; fuzzy spelling correction is not automatic.
+The existing 10 MB / 200k-row / 300-column and server-memory limits remain. No sandbox, vector database, embeddings
+or paid retrieval service is needed. Backend search uses no LLM calls; provider free tiers are quota-limited, not unlimited.
+
+Tests: `api/.venv/Scripts/python -m pytest api/tests -q`, plus the frontend regressions listed below. The uploaded
+workbook was checked locally without alteration; committed regressions contain only synthetic records.
 
 Providers (`api/app/providers.py`, one small interface: `list_models` + `complete`; the planner and explanation steps are unchanged):
 

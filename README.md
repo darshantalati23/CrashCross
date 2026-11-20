@@ -56,8 +56,9 @@ hash differs from `COMPLETE.json`. Only `public_candidate_*` and `aggregate_revi
 ## Tests
 
 ```powershell
-api/.venv/Scripts/python -m pytest api/tests -q    # 24 API tests
+api/.venv/Scripts/python -m pytest api/tests -q    # API and full-table lookup regressions
 cd web; npm run build                                # typecheck + production build
+node --test scripts/test-api-timeout.mjs             # frontend request/preset/search regressions (from web/)
 ```
 
 ## Documentation

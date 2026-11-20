@@ -21,6 +21,7 @@ from .charts import ChartError, build_chart
 from .config import settings
 from .ingest import SUPPORTED_EXTENSIONS, IngestError, parse_upload
 from .profile import build_overview, preview
+from .operations import OpError, filter_rows
 from .report import bundle_zip, html_report, results_json
 from .sessions import store
 from .util import clean, limiter
@@ -123,7 +124,25 @@ def delete_session(sid: str):
 @app.get("/api/sessions/{sid}/rows")
 def rows(sid: str, offset: int = 0, limit: int = 50):
     s = _session(sid)
-    return preview(s.df, max(0, offset), limit)
+    return {**preview(s.df, max(0, offset), limit), "rows_searched": len(s.df), "search_complete": True}
+
+
+class RowSearch(BaseModel):
+    column: str
+    value: str = Field(max_length=500)
+    match: str = "eq"
+
+
+@app.post("/api/sessions/{sid}/rows/search")
+def search_rows(sid: str, search: RowSearch, offset: int = 0, limit: int = 50):
+    s = _session(sid)
+    try:
+        if search.match not in ("eq", "contains", "starts_with"):
+            raise OpError("Search mode must be eq, contains or starts_with.")
+        df = filter_rows(s.df, [{"column": search.column, "op": search.match, "value": search.value}])
+    except OpError as e:
+        _err(422, "invalid_query", str(e))
+    return {**preview(df, max(0, offset), limit), "rows_searched": len(s.df), "search_complete": True}
 
 
 class ChartSpec(BaseModel):

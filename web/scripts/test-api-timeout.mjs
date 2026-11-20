@@ -13,7 +13,7 @@ const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.Modu
 
 function client(fetch) {
   const context = {
-    exports: {}, AbortController, fetch,
+    exports: {}, AbortController, URLSearchParams, fetch,
     setTimeout: (fn) => setTimeout(fn, 10), clearTimeout,
   };
   vm.runInNewContext(compiled, context);
@@ -38,6 +38,21 @@ test('a model check can be cancelled before headers arrive', async () => {
   const request = api.models({ provider: 'gemini', model: 'auto' }, controller.signal);
   controller.abort();
   await assert.rejects(request, { code: 'timeout' });
+});
+
+test('row search keeps column/value out of URLs and sends no provider key', async () => {
+  const { api } = client(async (url, init) => {
+    const parsed = new URL(url);
+    assert.equal(parsed.searchParams.has('column'), false);
+    assert.equal(parsed.searchParams.has('value'), false);
+    assert.equal(parsed.searchParams.get('offset'), '100');
+    assert.equal(init.method, 'POST');
+    assert.deepEqual(JSON.parse(init.body), { column: 'Name & ID', value: 'A+B #1', match: 'eq' });
+    assert.equal(init.headers['X-LLM-Api-Key'], undefined);
+    return { ok: true, json: async () => ({ total: 1, rows_searched: 109, rows: [] }) };
+  });
+  const result = await api.rows('session', 100, 50, { column: 'Name & ID', value: 'A+B #1', match: 'eq' });
+  assert.equal(result.rows_searched, 109);
 });
 
 test('Gemini presets and the requested default render without discovery', () => {
